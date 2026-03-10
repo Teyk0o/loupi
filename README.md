@@ -33,7 +33,7 @@ Loupi is a progressive web app designed for people with digestive issues (IBS, f
 
 - **100% free** — No premium tier, no ads, no data selling
 - **Privacy-first** — Health data encrypted at rest (AES-256-GCM), GDPR-compliant
-- **Open source** — MIT licensed, contributions welcome
+- **Open source** — Apache 2.0 licensed, contributions welcome
 - **French UI** — Designed for the French market (v1)
 
 ## Features
@@ -96,7 +96,31 @@ Options     GET  /v1/options/:category        POST /v1/options/:category
             PUT  /v1/options/item/:id         DELETE /v1/options/item/:id
 ```
 
-## Getting started
+## Deploy with Docker
+
+Loupi ships as a **single Docker image** containing the API, frontend, and Caddy reverse proxy. You only need to provide PostgreSQL and Redis.
+
+```bash
+# 1. Clone and configure
+git clone https://github.com/teyk0o/loupi.git
+cd loupi
+cp .env.example .env   # edit with your secrets
+
+# 2. Start everything
+docker compose up -d
+```
+
+Or pull the image directly:
+
+```bash
+docker pull ghcr.io/teyk0o/loupi:latest
+```
+
+> **Supported architectures:** `linux/amd64`, `linux/arm64`
+
+See [`.env.example`](.env.example) for all configuration options. Set `LOUPI_DOMAIN` to your domain (e.g. `loupi.example.com`) for automatic HTTPS via Caddy.
+
+## Development
 
 ### Prerequisites
 
@@ -104,20 +128,16 @@ Options     GET  /v1/options/:category        POST /v1/options/:category
 - [Node.js](https://nodejs.org/) 22+ & [pnpm](https://pnpm.io/)
 - [Go](https://go.dev/) 1.25+
 
-### Quick start with Docker
+### Quick start
 
 ```bash
-# Clone the repository
-git clone https://github.com/teyk0o/loupi.git
-cd loupi
-
-# Start everything (API, frontend, PostgreSQL, Redis)
+# Start everything (API, frontend, PostgreSQL, Redis) with hot-reload
 docker compose -f docker/docker-compose.dev.yml up -d
 ```
 
 The frontend is available at `http://localhost:3000` and the API at `http://localhost:8080`.
 
-### Manual development
+### Manual setup
 
 ```bash
 # Start infrastructure only

@@ -1,0 +1,71 @@
+# =============================================================================
+# Loupi — Production deployment example
+# Usage: docker compose up -d
+#
+# Before starting, copy .env.example to .env and adjust the values.
+# =============================================================================
+
+services:
+  loupi:
+    image: ghcr.io/teyk0o/loupi:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - LOUPI_ENV=production
+      - LOUPI_DB_HOST=db
+      - LOUPI_DB_PORT=5432
+      - LOUPI_DB_NAME=${LOUPI_DB_NAME:-loupi}
+      - LOUPI_DB_USER=${LOUPI_DB_USER:-loupi}
+      - LOUPI_DB_PASSWORD=${LOUPI_DB_PASSWORD:?Set LOUPI_DB_PASSWORD in .env}
+      - LOUPI_DB_SSL=disable
+      - LOUPI_REDIS_HOST=redis
+      - LOUPI_REDIS_PORT=6379
+      - LOUPI_JWT_SECRET=${LOUPI_JWT_SECRET:?Set LOUPI_JWT_SECRET in .env}
+      - LOUPI_ENCRYPTION_KEY=${LOUPI_ENCRYPTION_KEY:?Set LOUPI_ENCRYPTION_KEY in .env}
+      - LOUPI_DOMAIN=${LOUPI_DOMAIN:-:80}
+      - LOUPI_ALLOWED_ORIGINS=${LOUPI_ALLOWED_ORIGINS:-*}
+    volumes:
+      - loupi_photos:/app/photos
+      - caddy_data:/data/caddy
+      - caddy_config:/config/caddy
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${LOUPI_DB_NAME:-loupi}
+      - POSTGRES_USER=${LOUPI_DB_USER:-loupi}
+      - POSTGRES_PASSWORD=${LOUPI_DB_PASSWORD:?Set LOUPI_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LOUPI_DB_USER:-loupi} -d ${LOUPI_DB_NAME:-loupi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+  loupi_photos:
+  caddy_data:
+  caddy_config:

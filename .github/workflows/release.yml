@@ -1,0 +1,174 @@
+# =============================================================================
+# Loupi — Release workflow
+# Triggered on push of a version tag (v*).
+# Builds multi-arch Docker image, pushes to GHCR, and creates a GitHub Release.
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+  attestations: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog generation
+
+      # -----------------------------------------------------------------------
+      # Docker setup
+      # -----------------------------------------------------------------------
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------------
+      # Metadata
+      # -----------------------------------------------------------------------
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Loupi
+            org.opencontainers.image.description=Free, open-source food & digestive symptom tracker
+            org.opencontainers.image.url=https://loupi.app
+            org.opencontainers.image.source=https://github.com/Teyk0o/loupi
+            org.opencontainers.image.licenses=Apache-2.0
+
+      # -----------------------------------------------------------------------
+      # Build & Push
+      # -----------------------------------------------------------------------
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # -----------------------------------------------------------------------
+      # Attestation (supply chain security)
+      # -----------------------------------------------------------------------
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      # -----------------------------------------------------------------------
+      # Release notes generation
+      # -----------------------------------------------------------------------
+      - name: Generate changelog and create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Find previous tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v' | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          # Collect commits grouped by type
+          FEAT=""
+          FIX=""
+          DOCS=""
+          CHORE=""
+          OTHER=""
+
+          while IFS= read -r line; do
+            HASH=$(echo "$line" | cut -d' ' -f1)
+            MSG=$(echo "$line" | cut -d' ' -f2-)
+            SHORT_HASH="${HASH:0:7}"
+
+            case "$MSG" in
+              feat*)  FEAT="${FEAT}\n- ${MSG} (\`${SHORT_HASH}\`)" ;;
+              fix*)   FIX="${FIX}\n- ${MSG} (\`${SHORT_HASH}\`)" ;;
+              docs*)  DOCS="${DOCS}\n- ${MSG} (\`${SHORT_HASH}\`)" ;;
+              chore*|ci*|style*|refactor*|perf*|test*)
+                      CHORE="${CHORE}\n- ${MSG} (\`${SHORT_HASH}\`)" ;;
+              *)      OTHER="${OTHER}\n- ${MSG} (\`${SHORT_HASH}\`)" ;;
+            esac
+          done < <(git log --oneline "${PREV_TAG}..${TAG_NAME}" 2>/dev/null || git log --oneline)
+
+          # Build release body
+          BODY=""
+
+          if [ -n "$FEAT" ]; then
+            BODY="${BODY}## ✨ New Features\n${FEAT}\n\n"
+          fi
+          if [ -n "$FIX" ]; then
+            BODY="${BODY}## 🐛 Bug Fixes\n${FIX}\n\n"
+          fi
+          if [ -n "$DOCS" ]; then
+            BODY="${BODY}## 📚 Documentation\n${DOCS}\n\n"
+          fi
+          if [ -n "$CHORE" ]; then
+            BODY="${BODY}## 🔧 Maintenance\n${CHORE}\n\n"
+          fi
+          if [ -n "$OTHER" ]; then
+            BODY="${BODY}## 📦 Other\n${OTHER}\n\n"
+          fi
+
+          # Docker pull instructions
+          BODY="${BODY}---\n\n"
+          BODY="${BODY}## 🐳 Docker\n\n"
+          BODY="${BODY}\`\`\`bash\n"
+          BODY="${BODY}docker pull ghcr.io/teyk0o/loupi:${TAG_NAME}\n"
+          BODY="${BODY}\`\`\`\n\n"
+          BODY="${BODY}**Supported architectures:** \`linux/amd64\`, \`linux/arm64\`\n\n"
+          BODY="${BODY}See the [deployment guide](https://github.com/Teyk0o/loupi#getting-started) for setup instructions.\n\n"
+          BODY="${BODY}**Full changelog:** [\`${PREV_TAG}...${TAG_NAME}\`](https://github.com/Teyk0o/loupi/compare/${PREV_TAG}...${TAG_NAME})"
+
+          # Write release notes
+          echo -e "$BODY" > /tmp/release_body.md
+
+          # Create GitHub Release
+          gh release create "$TAG_NAME" \
+            --repo "$REPO" \
+            --title "$TAG_NAME" \
+            --notes-file /tmp/release_body.md \
+            --latest
