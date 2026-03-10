@@ -11,7 +11,7 @@ import (
 type WellnessEntry struct {
 	ID           uuid.UUID       `json:"id"`
 	UserID       uuid.UUID       `json:"user_id"`
-	Date         string          `json:"date"`
+	Date         time.Time       `json:"date"`
 	Stress       *int            `json:"stress,omitempty"`
 	Mood         *int            `json:"mood,omitempty"`
 	Energy       *int            `json:"energy,omitempty"`
