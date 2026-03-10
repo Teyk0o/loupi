@@ -27,11 +27,11 @@ type WellnessEntry struct {
 // CreateWellnessRequest holds the data needed to create or update a wellness entry.
 type CreateWellnessRequest struct {
 	Date         string           `json:"date" binding:"required"`
-	Stress       *int             `json:"stress,omitempty" binding:"omitempty,min=1,max=5"`
-	Mood         *int             `json:"mood,omitempty" binding:"omitempty,min=1,max=5"`
-	Energy       *int             `json:"energy,omitempty" binding:"omitempty,min=1,max=5"`
+	Stress       *int             `json:"stress,omitempty" binding:"omitempty,min=0,max=5"`
+	Mood         *int             `json:"mood,omitempty" binding:"omitempty,min=0,max=5"`
+	Energy       *int             `json:"energy,omitempty" binding:"omitempty,min=0,max=5"`
 	SleepHours   *float32         `json:"sleep_hours,omitempty" binding:"omitempty,min=0,max=24"`
-	SleepQuality *int             `json:"sleep_quality,omitempty" binding:"omitempty,min=1,max=5"`
+	SleepQuality *int             `json:"sleep_quality,omitempty" binding:"omitempty,min=0,max=5"`
 	Sport        *json.RawMessage `json:"sport,omitempty"`
 	Hydration    *int             `json:"hydration,omitempty" binding:"omitempty,min=0,max=50"`
 	Notes        *string          `json:"notes,omitempty" binding:"omitempty,max=2000"`
