@@ -11,6 +11,7 @@ import (
 type User struct {
 	ID            uuid.UUID  `json:"id"`
 	Email         string     `json:"email"`
+	FirstName     *string    `json:"first_name,omitempty"`
 	PasswordHash  *string    `json:"-"`
 	OAuthProvider *string    `json:"oauth_provider,omitempty"`
 	OAuthID       *string    `json:"-"`
@@ -23,6 +24,7 @@ type User struct {
 type UserResponse struct {
 	ID            uuid.UUID `json:"id"`
 	Email         string    `json:"email"`
+	FirstName     *string   `json:"first_name,omitempty"`
 	EmailVerified bool      `json:"email_verified"`
 	CreatedAt     time.Time `json:"created_at"`
 }
@@ -32,6 +34,7 @@ func (u *User) ToResponse() UserResponse {
 	return UserResponse{
 		ID:            u.ID,
 		Email:         u.Email,
+		FirstName:     u.FirstName,
 		EmailVerified: u.EmailVerified,
 		CreatedAt:     u.CreatedAt,
 	}

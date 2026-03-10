@@ -60,10 +60,10 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 	var user models.User
 	hashStr := string(hash)
 	err = s.db.QueryRow(ctx,
-		`INSERT INTO users (email, password_hash) VALUES ($1, $2)
-		 RETURNING id, email, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at`,
-		req.Email, hashStr,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+		`INSERT INTO users (email, password_hash, first_name) VALUES ($1, $2, $3)
+		 RETURNING id, email, first_name, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at`,
+		req.Email, hashStr, req.FirstName,
+	).Scan(&user.ID, &user.Email, &user.FirstName, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -113,10 +113,10 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*m
 func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := s.db.QueryRow(ctx,
-		`SELECT id, email, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at
+		`SELECT id, email, first_name, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at
 		 FROM users WHERE id = $1`,
 		id,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &user.FirstName, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
@@ -142,10 +142,10 @@ func (s *AuthService) DeleteAccount(ctx context.Context, userID uuid.UUID) error
 func (s *AuthService) getUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
 	err := s.db.QueryRow(ctx,
-		`SELECT id, email, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at
+		`SELECT id, email, first_name, password_hash, oauth_provider, oauth_id, email_verified, created_at, updated_at
 		 FROM users WHERE email = $1`,
 		email,
-	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	).Scan(&user.ID, &user.Email, &user.FirstName, &user.PasswordHash, &user.OAuthProvider, &user.OAuthID, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound

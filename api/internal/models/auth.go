@@ -2,8 +2,9 @@ package models
 
 // RegisterRequest holds the data needed to register a new user.
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email,max=255"`
-	Password string `json:"password" binding:"required,min=8,max=128"`
+	Email     string  `json:"email" binding:"required,email,max=255"`
+	Password  string  `json:"password" binding:"required,min=8,max=128"`
+	FirstName *string `json:"first_name,omitempty" binding:"omitempty,max=100"`
 }
 
 // LoginRequest holds the data needed to authenticate a user.
