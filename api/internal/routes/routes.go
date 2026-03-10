@@ -10,6 +10,7 @@ import (
 	"github.com/teyk0o/loupi/api/internal/handlers"
 	"github.com/teyk0o/loupi/api/internal/middleware"
 	"github.com/teyk0o/loupi/api/internal/services"
+	"github.com/teyk0o/loupi/api/internal/utils"
 )
 
 // Setup configures all routes on the given Gin engine.
@@ -21,6 +22,7 @@ func Setup(
 	symptomService *services.SymptomService,
 	wellnessService *services.WellnessService,
 	customOptionService *services.CustomOptionService,
+	audit *utils.AuditLogger,
 ) {
 	// Global middleware
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
@@ -30,7 +32,7 @@ func Setup(
 	authRateLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, audit, cfg)
 	mealHandler := handlers.NewMealHandler(mealService)
 	symptomHandler := handlers.NewSymptomHandler(symptomService)
 	wellnessHandler := handlers.NewWellnessHandler(wellnessService)
@@ -55,6 +57,7 @@ func Setup(
 	authProtected.Use(middleware.Auth(authService))
 	{
 		authProtected.GET("/me", authHandler.Me)
+		authProtected.POST("/logout", authHandler.Logout)
 		authProtected.DELETE("/account", authHandler.DeleteAccount)
 	}
 
