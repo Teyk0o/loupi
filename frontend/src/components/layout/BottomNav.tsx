@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Bottom navigation bar for the main application.
- * Displays the five primary sections: Journal, Symptoms, Add, Wellness, Settings.
+ * Bottom navigation bar for the main application (mobile only).
+ * Hidden on md+ screens where the Sidebar is used instead.
  */
 
 import { usePathname } from "next/navigation";
@@ -34,7 +34,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden">
       <div className="mx-auto flex max-w-lg items-center justify-around py-2">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
