@@ -12,7 +12,19 @@ import { GuestGuard } from "@/components/guards/GuestGuard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
-import type { ApiError } from "@/lib/api";
+import { mapApiError, type ApiError } from "@/lib/api";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validatePassword(pw: string): string | null {
+  if (pw.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+  if (!/[A-Z]/.test(pw)) return "Le mot de passe doit contenir au moins une majuscule.";
+  if (!/[a-z]/.test(pw)) return "Le mot de passe doit contenir au moins une minuscule.";
+  if (!/[0-9]/.test(pw)) return "Le mot de passe doit contenir au moins un chiffre.";
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw))
+    return "Le mot de passe doit contenir au moins un caractère spécial.";
+  return null;
+}
 
 export default function RegisterPage() {
   const { register } = useAuthContext();
@@ -27,13 +39,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
+    if (!EMAIL_REGEX.test(email)) {
+      setError("Veuillez entrer un email valide.");
       return;
     }
 
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères");
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setError(pwError);
       return;
     }
 
@@ -43,7 +61,7 @@ export default function RegisterPage() {
       await register(email, password, firstName || undefined);
     } catch (err) {
       const apiErr = err as ApiError;
-      setError(apiErr.message || "Une erreur est survenue");
+      setError(mapApiError(apiErr));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,6 +97,7 @@ export default function RegisterPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               autoComplete="given-name"
+              maxLength={100}
             />
             <Input
               id="email"
@@ -88,16 +107,18 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              maxLength={254}
               required
             />
             <Input
               id="password"
               label="Mot de passe"
               type="password"
-              placeholder="Minimum 8 caractères"
+              placeholder="Min. 8 car., majuscule, chiffre, spécial"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
+              maxLength={128}
               required
             />
             <Input
@@ -108,6 +129,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
+              maxLength={128}
               required
             />
 

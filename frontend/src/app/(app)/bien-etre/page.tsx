@@ -313,6 +313,7 @@ export default function WellnessPage() {
               }
               placeholder="Quelque chose à noter sur votre journée..."
               rows={3}
+              maxLength={1000}
               className="
                 w-full resize-none rounded-[--radius-md] border border-border
                 bg-surface px-4 py-3 text-sm text-foreground

@@ -12,7 +12,9 @@ import { GuestGuard } from "@/components/guards/GuestGuard";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
-import type { ApiError } from "@/lib/api";
+import { mapApiError, type ApiError } from "@/lib/api";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginPage() {
   const { login } = useAuthContext();
@@ -24,13 +26,24 @@ export default function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (!EMAIL_REGEX.test(email)) {
+      setError("Veuillez entrer un email valide.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await login(email, password);
     } catch (err) {
       const apiErr = err as ApiError;
-      setError(apiErr.message || "Une erreur est survenue");
+      setError(mapApiError(apiErr));
     } finally {
       setIsSubmitting(false);
     }
@@ -66,6 +79,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              maxLength={254}
               required
             />
             <Input
@@ -76,6 +90,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              maxLength={128}
               required
             />
 

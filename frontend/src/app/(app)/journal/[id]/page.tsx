@@ -19,7 +19,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useCustomOptions } from "@/hooks/useCustomOptions";
-import { apiFetch, type ApiError } from "@/lib/api";
+import { apiFetch, isValidUUID, type ApiError } from "@/lib/api";
 
 interface Meal {
   id: string;
@@ -99,6 +99,11 @@ export default function MealDetailPage() {
   const [isSubmittingCheckin, setIsSubmittingCheckin] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!isValidUUID(mealId)) {
+      setError("ID de repas invalide");
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const [mealData, checkinData] = await Promise.all([
@@ -343,6 +348,7 @@ export default function MealDetailPage() {
             onChange={(e) => setCheckinNotes(e.target.value)}
             placeholder="Notes (optionnel)..."
             rows={2}
+            maxLength={1000}
             className="
               mb-3 w-full resize-none rounded-[--radius-md] border border-border
               bg-surface px-3 py-2 text-xs text-foreground outline-none

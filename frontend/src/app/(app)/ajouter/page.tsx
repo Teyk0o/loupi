@@ -135,6 +135,7 @@ export default function AddMealPage() {
               placeholder="Décrivez votre repas..."
               rows={4}
               required
+              maxLength={1000}
               className="
                 w-full resize-none rounded-[--radius-md] border border-border
                 bg-surface px-4 py-3

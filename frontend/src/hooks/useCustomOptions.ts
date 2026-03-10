@@ -4,13 +4,14 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { apiFetch, type ApiError } from "@/lib/api";
+import { apiFetch, isValidUUID, type ApiError } from "@/lib/api";
 
 export type OptionCategory = "symptom_type" | "meal_category" | "sport_type";
 
+const VALID_CATEGORIES: OptionCategory[] = ["symptom_type", "meal_category", "sport_type"];
+
 export interface CustomOption {
   id: string;
-  user_id: string;
   category: OptionCategory;
   value: string;
   label: string;
@@ -35,6 +36,11 @@ export function useCustomOptions(category: OptionCategory): UseCustomOptionsRetu
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
+    if (!VALID_CATEGORIES.includes(category)) {
+      setError("Catégorie invalide");
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError("");
     try {
@@ -70,6 +76,7 @@ export function useCustomOptions(category: OptionCategory): UseCustomOptionsRetu
 
   const updateOption = useCallback(
     async (id: string, label: string, emoji?: string) => {
+      if (!isValidUUID(id)) throw new Error("ID invalide");
       setError("");
       try {
         await apiFetch(`/v1/options/item/${id}`, {
@@ -87,6 +94,7 @@ export function useCustomOptions(category: OptionCategory): UseCustomOptionsRetu
 
   const deleteOption = useCallback(
     async (id: string) => {
+      if (!isValidUUID(id)) throw new Error("ID invalide");
       setError("");
       try {
         await apiFetch(`/v1/options/item/${id}`, { method: "DELETE" });
