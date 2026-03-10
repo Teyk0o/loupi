@@ -92,6 +92,10 @@ LABEL org.opencontainers.image.url="https://loupi.app"
 LABEL org.opencontainers.image.source="https://github.com/Teyk0o/loupi"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
+# Next.js standalone must bind to all interfaces inside the container
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
 # Caddy serves on 80 (HTTP) and 443 (HTTPS)
 EXPOSE 80 443
 

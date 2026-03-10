@@ -7,12 +7,12 @@
 {$LOUPI_DOMAIN::80} {
 	# API routes → Go backend
 	handle /v1/* {
-		reverse_proxy localhost:8080
+		reverse_proxy 127.0.0.1:8080
 	}
 
 	# Everything else → Next.js frontend
 	handle {
-		reverse_proxy localhost:3000
+		reverse_proxy 127.0.0.1:3000
 	}
 
 	# Healthcheck endpoint
