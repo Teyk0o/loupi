@@ -2,7 +2,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/teyk0o/loupi/api/internal/config"
 	"github.com/teyk0o/loupi/api/internal/database"
+	"github.com/teyk0o/loupi/api/internal/middleware"
 	"github.com/teyk0o/loupi/api/internal/models"
 	"github.com/teyk0o/loupi/api/internal/routes"
 	"github.com/teyk0o/loupi/api/internal/services"
@@ -63,6 +66,10 @@ func main() {
 	// Initialize audit logger
 	audit := utils.NewAuditLogger(db)
 
+	// Initialize login rate limiter (5 failures → 15 min lockout)
+	loginLimiter := middleware.NewLoginRateLimiter(context.Background(), 5, 15*time.Minute)
+	defer loginLimiter.Stop()
+
 	// Initialize services
 	authService := services.NewAuthService(db, rdb, cfg)
 	mealService := services.NewMealService(db, encryptor)
@@ -73,7 +80,7 @@ func main() {
 	// Setup router
 	r := gin.Default()
 	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
-	routes.Setup(r, cfg, authService, mealService, symptomService, wellnessService, customOptionService, audit)
+	routes.Setup(r, cfg, authService, mealService, symptomService, wellnessService, customOptionService, audit, loginLimiter)
 
 	// Start server
 	addr := ":" + cfg.Port

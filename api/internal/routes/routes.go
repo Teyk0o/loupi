@@ -2,6 +2,7 @@
 package routes
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,16 +24,21 @@ func Setup(
 	wellnessService *services.WellnessService,
 	customOptionService *services.CustomOptionService,
 	audit *utils.AuditLogger,
+	loginLimiter *middleware.LoginRateLimiter,
 ) {
 	// Global middleware
+	r.Use(middleware.BodyLimit(1 << 20)) // 1 MB
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 	r.Use(middleware.SecurityHeaders())
 
+	ctx := context.Background()
+
 	// Rate limiter for auth endpoints (10 requests per minute)
-	authRateLimiter := middleware.NewRateLimiter(10, 1*time.Minute)
+	authRateLimiter := middleware.NewRateLimiter(ctx, 10, 1*time.Minute)
+	_ = authRateLimiter // cleanup handled via context
 
 	// Handlers
-	authHandler := handlers.NewAuthHandler(authService, audit, cfg)
+	authHandler := handlers.NewAuthHandler(authService, audit, cfg, loginLimiter)
 	mealHandler := handlers.NewMealHandler(mealService)
 	symptomHandler := handlers.NewSymptomHandler(symptomService)
 	wellnessHandler := handlers.NewWellnessHandler(wellnessService)
@@ -43,7 +49,7 @@ func Setup(
 		c.JSON(200, gin.H{"status": "ok", "service": "loupi-api"})
 	})
 
-	// Auth routes (public)
+	// Auth routes (public — no CSRF required for login/register)
 	auth := r.Group("/v1/auth")
 	auth.Use(authRateLimiter.Middleware())
 	{
@@ -55,6 +61,7 @@ func Setup(
 	// Auth routes (protected)
 	authProtected := r.Group("/v1/auth")
 	authProtected.Use(middleware.Auth(authService))
+	authProtected.Use(middleware.CSRF(cfg.CookieDomain, cfg.CookieSecure))
 	{
 		authProtected.GET("/me", authHandler.Me)
 		authProtected.POST("/logout", authHandler.Logout)
@@ -64,6 +71,7 @@ func Setup(
 	// Protected API routes
 	api := r.Group("/v1")
 	api.Use(middleware.Auth(authService))
+	api.Use(middleware.CSRF(cfg.CookieDomain, cfg.CookieSecure))
 	{
 		// Meals
 		api.GET("/meals", mealHandler.ListByDate)

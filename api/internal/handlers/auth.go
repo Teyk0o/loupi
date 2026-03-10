@@ -24,14 +24,15 @@ const (
 
 // AuthHandler handles authentication-related HTTP requests.
 type AuthHandler struct {
-	authService *services.AuthService
-	audit       *utils.AuditLogger
-	cfg         *config.Config
+	authService  *services.AuthService
+	audit        *utils.AuditLogger
+	cfg          *config.Config
+	loginLimiter *middleware.LoginRateLimiter
 }
 
 // NewAuthHandler creates a new AuthHandler instance.
-func NewAuthHandler(authService *services.AuthService, audit *utils.AuditLogger, cfg *config.Config) *AuthHandler {
-	return &AuthHandler{authService: authService, audit: audit, cfg: cfg}
+func NewAuthHandler(authService *services.AuthService, audit *utils.AuditLogger, cfg *config.Config, loginLimiter *middleware.LoginRateLimiter) *AuthHandler {
+	return &AuthHandler{authService: authService, audit: audit, cfg: cfg, loginLimiter: loginLimiter}
 }
 
 // setAuthCookies sets httpOnly secure cookies for access and refresh tokens.
@@ -96,9 +97,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Check account-level lockout
+	if h.loginLimiter.IsLocked(req.Email) {
+		c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "account_locked",
+			Message: "Too many failed attempts, please try again later",
+		})
+		return
+	}
+
 	tokens, err := h.authService.Login(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidCredentials) {
+			h.loginLimiter.RecordFailure(req.Email)
 			c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 				Error:   "invalid_credentials",
 				Message: "Invalid email or password",
@@ -113,6 +124,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	h.loginLimiter.RecordSuccess(req.Email)
 	h.setAuthCookies(c, tokens)
 	_ = h.audit.Log(c.Request.Context(), tokens.User.ID, "login", "user", tokens.User.ID, c.ClientIP())
 
