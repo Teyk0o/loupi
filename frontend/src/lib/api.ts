@@ -3,7 +3,7 @@
  * Handles authentication tokens, automatic refresh, and error formatting.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /** Standard error shape returned by the API. */
 export interface ApiError {

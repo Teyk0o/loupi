@@ -14,7 +14,12 @@ func CORS(allowedOrigins string) gin.HandlerFunc {
 		origin := c.GetHeader("Origin")
 
 		for _, allowed := range origins {
-			if strings.TrimSpace(allowed) == origin {
+			trimmed := strings.TrimSpace(allowed)
+			if trimmed == "*" {
+				c.Header("Access-Control-Allow-Origin", origin)
+				break
+			}
+			if trimmed == origin {
 				c.Header("Access-Control-Allow-Origin", origin)
 				break
 			}

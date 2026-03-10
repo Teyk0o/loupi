@@ -1,9 +1,15 @@
 # Loupi — Caddy reverse proxy configuration
-# Routes API requests to the Go backend, everything else to Next.js.
 #
-# In production, set LOUPI_DOMAIN to enable automatic HTTPS.
-# Without it, Caddy listens on :80 (HTTP only).
+# LOUPI_DOMAIN: Main frontend domain (e.g. dashboard.loupi.app)
+# LOUPI_API_DOMAIN: Dedicated API domain (e.g. api.loupi.app)
+#
+# In production, set both for automatic HTTPS via Let's Encrypt.
+# Without LOUPI_DOMAIN, Caddy listens on :80 (HTTP only).
+# Without LOUPI_API_DOMAIN, the API is only reachable via LOUPI_DOMAIN/v1/*.
 
+# ---------------------------------------------------------------------------
+# Frontend domain — serves Next.js + proxies /v1/* to the API
+# ---------------------------------------------------------------------------
 {$LOUPI_DOMAIN::80} {
 	# API routes → Go backend
 	handle /v1/* {
@@ -20,7 +26,22 @@
 		respond "OK" 200
 	}
 
-	# Logging
+	log {
+		output stderr
+		format console
+	}
+}
+
+# ---------------------------------------------------------------------------
+# API domain — dedicated API access for external clients
+# ---------------------------------------------------------------------------
+{$LOUPI_API_DOMAIN::9999} {
+	reverse_proxy 127.0.0.1:8080
+
+	handle /health {
+		respond "OK" 200
+	}
+
 	log {
 		output stderr
 		format console

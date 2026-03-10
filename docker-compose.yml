@@ -25,6 +25,7 @@ services:
       - LOUPI_JWT_SECRET=${LOUPI_JWT_SECRET:?Set LOUPI_JWT_SECRET in .env}
       - LOUPI_ENCRYPTION_KEY=${LOUPI_ENCRYPTION_KEY:?Set LOUPI_ENCRYPTION_KEY in .env}
       - LOUPI_DOMAIN=${LOUPI_DOMAIN:-:80}
+      - LOUPI_API_DOMAIN=${LOUPI_API_DOMAIN:-}
       - LOUPI_ALLOWED_ORIGINS=${LOUPI_ALLOWED_ORIGINS:-*}
     volumes:
       - loupi_photos:/app/photos
