@@ -25,7 +25,6 @@ api/.env
 
 # Claude
 .claude/
-CLAUDE.md
 
 # Other
 CAHIER_DES_CHARGES.md

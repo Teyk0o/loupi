@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://loupi.app"><img src="https://img.shields.io/badge/loupi.app-Visit-48C7B0?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48cGF0aCBkPSJNMiAxMmgyMCIvPjxwYXRoIGQ9Ik0xMiAyYTE1LjMgMTUuMyAwIDAgMSA0IDEwIDE1LjMgMTUuMyAwIDAgMS00IDEwIDE1LjMgMTUuMyAwIDAgMS00LTEwIDE1LjMgMTUuMyAwIDAgMSA0LTEwIi8+PC9zdmc+" alt="Website" /></a>
   <a href="https://github.com/teyk0o/loupi"><img src="https://img.shields.io/github/stars/teyk0o/loupi?style=for-the-badge&color=48C7B0&logo=github&logoColor=white" alt="Stars" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-48C7B0?style=for-the-badge" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-48C7B0?style=for-the-badge" alt="License" /></a>
   <a href="https://github.com/teyk0o/loupi/issues"><img src="https://img.shields.io/github/issues/teyk0o/loupi?style=for-the-badge&color=48C7B0&logo=github&logoColor=white" alt="Issues" /></a>
 </p>
 
@@ -159,7 +159,7 @@ Please read the [CLAUDE.md](CLAUDE.md) for detailed coding conventions.
 
 ## License
 
-This project is open source under the [MIT License](LICENSE).
+This project is open source under the [Apache License 2.0](LICENSE).
 
 ---
 
