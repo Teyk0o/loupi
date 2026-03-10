@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, type FormEvent } from "react";
+import { useAuthContext } from "@/components/providers/AuthProvider";
 import {
   Brain,
   Smile,
@@ -20,6 +21,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { useCustomOptions } from "@/hooks/useCustomOptions";
 import { apiFetch, type ApiError } from "@/lib/api";
 
 interface SportSession {
@@ -39,37 +41,43 @@ interface WellnessData {
   notes?: string;
 }
 
-const sportTypes = [
-  { value: "running", label: "Course", emoji: "🏃" },
-  { value: "cycling", label: "Vélo", emoji: "🚴" },
-  { value: "swimming", label: "Natation", emoji: "🏊" },
-  { value: "gym", label: "Musculation", emoji: "🏋️" },
-  { value: "yoga", label: "Yoga", emoji: "🧘" },
-  { value: "walking", label: "Marche", emoji: "🚶" },
-  { value: "team_sport", label: "Sport co.", emoji: "⚽" },
-  { value: "other", label: "Autre", emoji: "🏅" },
-];
 
-/** Metric selector component (1-5 scale). */
+/** Scale labels for each metric (0 = none/best, 5 = worst/highest). */
+const metricScaleLabels: Record<string, string[]> = {
+  stress: ["Aucun", "Léger", "Modéré", "Élevé", "Intense", "Extrême"],
+  mood: ["Très mauvaise", "Mauvaise", "Neutre", "Bonne", "Très bonne", "Excellente"],
+  energy: ["Aucune", "Très faible", "Faible", "Correcte", "Bonne", "Débordante"],
+  sleep_quality: ["Aucune", "Très mauvaise", "Mauvaise", "Correcte", "Bonne", "Excellente"],
+};
+
+/** Metric selector component (0-5 scale with descriptive labels). */
 function MetricSelector({
   label,
   icon: Icon,
   value,
+  metricKey,
   onChange,
 }: {
   label: string;
   icon: React.ComponentType<{ size: number }>;
   value: number | undefined;
+  metricKey: string;
   onChange: (v: number) => void;
 }) {
+  const labels = metricScaleLabels[metricKey] || [];
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
         <Icon size={16} />
         <span className="font-heading text-sm font-medium">{label}</span>
+        {value !== undefined ? (
+          <span className="text-xs text-foreground-secondary">
+            — {labels[value] || value}
+          </span>
+        ) : null}
       </div>
       <div className="flex gap-1.5">
-        {[1, 2, 3, 4, 5].map((n) => (
+        {[0, 1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
@@ -97,6 +105,7 @@ function todayString(): string {
 }
 
 export default function WellnessPage() {
+  const { options: sportTypes } = useCustomOptions("sport_type");
   const [data, setData] = useState<WellnessData>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,11 +114,15 @@ export default function WellnessPage() {
 
   // Sport form state
   const [showSportForm, setShowSportForm] = useState(false);
-  const [sportType, setSportType] = useState("running");
+  const [sportType, setSportType] = useState("");
   const [sportDuration, setSportDuration] = useState(30);
   const [sportIntensity, setSportIntensity] = useState(3);
 
+  const { user } = useAuthContext();
+
   useEffect(() => {
+    setData({});
+    setIsLoading(true);
     async function load() {
       try {
         const existing = await apiFetch<WellnessData>(
@@ -123,11 +136,12 @@ export default function WellnessPage() {
       }
     }
     load();
-  }, []);
+  }, [user?.id]);
 
   function addSportSession() {
+    const selectedType = sportType || (sportTypes.length > 0 ? sportTypes[0].value : "other");
     const session: SportSession = {
-      type: sportType,
+      type: selectedType,
       duration_minutes: sportDuration,
       intensity: sportIntensity,
     };
@@ -136,7 +150,7 @@ export default function WellnessPage() {
       sport: [...(prev.sport || []), session],
     }));
     setShowSportForm(false);
-    setSportType("running");
+    setSportType("");
     setSportDuration(30);
     setSportIntensity(3);
   }
@@ -196,92 +210,118 @@ export default function WellnessPage() {
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5 md:grid md:grid-cols-2 md:items-start">
         {/* Mood & Energy metrics */}
         <Card padding="lg" className="flex flex-col gap-5">
           <MetricSelector
             label="Stress"
             icon={Brain}
             value={data.stress}
+            metricKey="stress"
             onChange={(v) => setData((prev) => ({ ...prev, stress: v }))}
           />
           <MetricSelector
             label="Humeur"
             icon={Smile}
             value={data.mood}
+            metricKey="mood"
             onChange={(v) => setData((prev) => ({ ...prev, mood: v }))}
           />
           <MetricSelector
             label="Énergie"
             icon={Zap}
             value={data.energy}
+            metricKey="energy"
             onChange={(v) => setData((prev) => ({ ...prev, energy: v }))}
           />
           <MetricSelector
             label="Qualité du sommeil"
             icon={Moon}
             value={data.sleep_quality}
+            metricKey="sleep_quality"
             onChange={(v) => setData((prev) => ({ ...prev, sleep_quality: v }))}
           />
         </Card>
 
-        {/* Sleep & Hydration */}
-        <Card padding="lg" className="flex flex-col gap-4">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <Moon size={16} />
-              <span className="font-heading text-sm font-medium">
-                Heures de sommeil
-              </span>
+        {/* Sleep, Hydration & Notes */}
+        <div className="flex flex-col gap-5">
+          <Card padding="lg" className="flex flex-col gap-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Moon size={16} />
+                <span className="font-heading text-sm font-medium">
+                  Heures de sommeil
+                </span>
+              </div>
+              <input
+                type="number"
+                min={0}
+                max={24}
+                step={0.5}
+                value={data.sleep_hours ?? ""}
+                onChange={(e) =>
+                  setData((prev) => ({
+                    ...prev,
+                    sleep_hours: e.target.value ? parseFloat(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="7.5"
+                className="
+                  w-full rounded-[--radius-md] border border-border bg-surface
+                  px-4 py-3 text-sm text-foreground outline-none
+                  transition-all focus:border-primary focus:ring-2 focus:ring-primary-light
+                "
+              />
             </div>
-            <input
-              type="number"
-              min={0}
-              max={24}
-              step={0.5}
-              value={data.sleep_hours ?? ""}
-              onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  sleep_hours: e.target.value ? parseFloat(e.target.value) : undefined,
-                }))
-              }
-              placeholder="7.5"
-              className="
-                w-full rounded-[--radius-md] border border-border bg-surface
-                px-4 py-3 text-sm text-foreground outline-none
-                transition-all focus:border-primary focus:ring-2 focus:ring-primary-light
-              "
-            />
-          </div>
 
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <Droplets size={16} />
-              <span className="font-heading text-sm font-medium">
-                Verres d&apos;eau
-              </span>
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Droplets size={16} />
+                <span className="font-heading text-sm font-medium">
+                  Verres d&apos;eau
+                </span>
+              </div>
+              <input
+                type="number"
+                min={0}
+                max={50}
+                value={data.hydration ?? ""}
+                onChange={(e) =>
+                  setData((prev) => ({
+                    ...prev,
+                    hydration: e.target.value ? parseInt(e.target.value) : undefined,
+                  }))
+                }
+                placeholder="8"
+                className="
+                  w-full rounded-[--radius-md] border border-border bg-surface
+                  px-4 py-3 text-sm text-foreground outline-none
+                  transition-all focus:border-primary focus:ring-2 focus:ring-primary-light
+                "
+              />
             </div>
-            <input
-              type="number"
-              min={0}
-              max={50}
-              value={data.hydration ?? ""}
+          </Card>
+
+          <Card padding="lg">
+            <label className="mb-2 block font-heading text-sm font-medium">
+              Notes
+            </label>
+            <textarea
+              value={data.notes ?? ""}
               onChange={(e) =>
-                setData((prev) => ({
-                  ...prev,
-                  hydration: e.target.value ? parseInt(e.target.value) : undefined,
-                }))
+                setData((prev) => ({ ...prev, notes: e.target.value || undefined }))
               }
-              placeholder="8"
+              placeholder="Quelque chose à noter sur votre journée..."
+              rows={3}
               className="
-                w-full rounded-[--radius-md] border border-border bg-surface
-                px-4 py-3 text-sm text-foreground outline-none
+                w-full resize-none rounded-[--radius-md] border border-border
+                bg-surface px-4 py-3 text-sm text-foreground
+                placeholder:text-foreground-secondary outline-none
                 transition-all focus:border-primary focus:ring-2 focus:ring-primary-light
               "
             />
-          </div>
-        </Card>
+          </Card>
+        </div>
 
         {/* Sport sessions */}
         <Card padding="lg">
@@ -422,28 +462,7 @@ export default function WellnessPage() {
           ) : null}
         </Card>
 
-        {/* Notes */}
-        <Card padding="lg">
-          <label className="mb-2 block font-heading text-sm font-medium">
-            Notes
-          </label>
-          <textarea
-            value={data.notes ?? ""}
-            onChange={(e) =>
-              setData((prev) => ({ ...prev, notes: e.target.value || undefined }))
-            }
-            placeholder="Quelque chose à noter sur votre journée..."
-            rows={3}
-            className="
-              w-full resize-none rounded-[--radius-md] border border-border
-              bg-surface px-4 py-3 text-sm text-foreground
-              placeholder:text-foreground-secondary outline-none
-              transition-all focus:border-primary focus:ring-2 focus:ring-primary-light
-            "
-          />
-        </Card>
-
-        <Button type="submit" isLoading={isSaving} className="w-full">
+        <Button type="submit" isLoading={isSaving} className="w-full md:col-span-2">
           {saved ? (
             <span className="inline-flex items-center gap-1.5">
               <Check size={16} /> Enregistré

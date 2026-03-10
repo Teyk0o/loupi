@@ -5,11 +5,12 @@
  * Displays today's meals and allows navigation between dates.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useAuthContext } from "@/components/providers/AuthProvider";
 import { Card } from "@/components/ui/Card";
+import { useCustomOptions } from "@/hooks/useCustomOptions";
 import { apiFetch } from "@/lib/api";
 
 /** Meal shape returned by the API. */
@@ -20,31 +21,6 @@ interface Meal {
   meal_time: string;
   created_at: string;
 }
-
-/** Category display config (matches API oneof values). */
-const categoryLabels: Record<string, string> = {
-  homemade: "Fait maison",
-  restaurant: "Restaurant",
-  takeout: "À emporter",
-  snack: "Collation",
-  fast_food: "Fast-food",
-  cafeteria: "Cantine",
-  family: "En famille",
-  friends: "Entre amis",
-  other: "Autre",
-};
-
-const categoryEmojis: Record<string, string> = {
-  homemade: "🏠",
-  restaurant: "🍽️",
-  takeout: "🥡",
-  snack: "🍪",
-  fast_food: "🍔",
-  cafeteria: "🏫",
-  family: "👨‍👩‍👧",
-  friends: "👫",
-  other: "🍴",
-};
 
 /** Format a Date to YYYY-MM-DD. */
 function toDateString(date: Date): string {
@@ -68,9 +44,25 @@ function extractTime(isoString: string): string {
 
 export default function JournalPage() {
   const { user } = useAuthContext();
+  const { options: mealCategories } = useCustomOptions("meal_category");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [meals, setMeals] = useState<Meal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  /** Build label/emoji lookup maps from user's custom options. */
+  const categoryLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const cat of mealCategories) map[cat.value] = cat.label;
+    return map;
+  }, [mealCategories]);
+
+  const categoryEmojis = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const cat of mealCategories) {
+      if (cat.emoji) map[cat.value] = cat.emoji;
+    }
+    return map;
+  }, [mealCategories]);
 
   const fetchMeals = useCallback(async (date: Date) => {
     setIsLoading(true);
@@ -110,36 +102,38 @@ export default function JournalPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-heading text-xl font-semibold">
-          Bonjour{user?.first_name ? ` ${user.first_name}` : ""} 👋
-        </h1>
-        <p className="text-sm text-foreground-secondary">
-          Votre journal alimentaire
-        </p>
-      </div>
+      {/* Header + Date selector */}
+      <div className="mb-6 md:flex md:items-center md:justify-between">
+        <div className="mb-4 md:mb-0">
+          <h1 className="font-heading text-xl font-semibold">
+            Bonjour{user?.first_name ? ` ${user.first_name}` : ""} 👋
+          </h1>
+          <p className="text-sm text-foreground-secondary">
+            Votre journal alimentaire
+          </p>
+        </div>
 
-      {/* Date selector */}
-      <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={goToPreviousDay}
-          className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:bg-surface hover:text-foreground"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <button
-          onClick={() => setSelectedDate(new Date())}
-          className={`font-heading text-sm font-medium ${isToday ? "text-primary" : "text-foreground"}`}
-        >
-          {isToday ? "Aujourd'hui" : formatDisplayDate(selectedDate)}
-        </button>
-        <button
-          onClick={goToNextDay}
-          className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:bg-surface hover:text-foreground"
-        >
-          <ChevronRight size={20} />
-        </button>
+        {/* Date selector */}
+        <div className="mx-auto flex w-fit items-center gap-2 rounded-[--radius-md] border border-border bg-surface px-2 py-1 md:mx-0 md:px-3">
+          <button
+            onClick={goToPreviousDay}
+            className="rounded-[--radius-sm] p-1.5 text-foreground-secondary hover:text-foreground"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            onClick={() => setSelectedDate(new Date())}
+            className={`min-w-[140px] text-center font-heading text-sm font-medium ${isToday ? "text-primary" : "text-foreground"}`}
+          >
+            {isToday ? "Aujourd'hui" : formatDisplayDate(selectedDate)}
+          </button>
+          <button
+            onClick={goToNextDay}
+            className="rounded-[--radius-sm] p-1.5 text-foreground-secondary hover:text-foreground"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Meals list */}
@@ -161,7 +155,7 @@ export default function JournalPage() {
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:grid-cols-3">
           {meals.map((meal) => (
             <Link key={meal.id} href={`/journal/${meal.id}`}>
               <Card className="flex items-center gap-3 transition-colors hover:border-primary/30">
@@ -185,13 +179,6 @@ export default function JournalPage() {
         </div>
       )}
 
-      {/* Floating add button */}
-      <Link
-        href="/ajouter"
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-      >
-        <Plus size={28} />
-      </Link>
     </div>
   );
 }

@@ -41,10 +41,11 @@ func main() {
 	mealService := services.NewMealService(db)
 	symptomService := services.NewSymptomService(db)
 	wellnessService := services.NewWellnessService(db)
+	customOptionService := services.NewCustomOptionService(db)
 
 	// Setup router
 	r := gin.Default()
-	routes.Setup(r, cfg, authService, mealService, symptomService, wellnessService)
+	routes.Setup(r, cfg, authService, mealService, symptomService, wellnessService, customOptionService)
 
 	// Start server
 	addr := ":" + cfg.Port

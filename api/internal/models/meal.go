@@ -21,13 +21,13 @@ type Meal struct {
 // CreateMealRequest holds the data needed to create a new meal.
 type CreateMealRequest struct {
 	Description string `json:"description" binding:"required,max=1000"`
-	Category    string `json:"category" binding:"required,oneof=homemade restaurant takeout snack fast_food cafeteria family friends other"`
+	Category    string `json:"category" binding:"required,max=100"`
 	MealTime    string `json:"meal_time" binding:"required"`
 }
 
 // UpdateMealRequest holds the data needed to update an existing meal.
 type UpdateMealRequest struct {
 	Description *string `json:"description,omitempty" binding:"omitempty,max=1000"`
-	Category    *string `json:"category,omitempty" binding:"omitempty,oneof=homemade restaurant takeout snack fast_food cafeteria family friends other"`
+	Category    *string `json:"category,omitempty" binding:"omitempty,max=100"`
 	MealTime    *string `json:"meal_time,omitempty"`
 }

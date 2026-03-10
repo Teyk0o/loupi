@@ -9,7 +9,7 @@ import (
 
 // SymptomDetail represents a single symptom with its severity.
 type SymptomDetail struct {
-	Type     string `json:"type" binding:"required,oneof=diarrhea stomach_ache nausea bloating heartburn cramps constipation gas reflux fatigue"`
+	Type     string `json:"type" binding:"required,max=100"`
 	Severity int    `json:"severity" binding:"required,min=1,max=5"`
 }
 

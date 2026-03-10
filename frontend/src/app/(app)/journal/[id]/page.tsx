@@ -6,7 +6,7 @@
  * Allows adding new check-ins and navigating back to the journal.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useCustomOptions } from "@/hooks/useCustomOptions";
 import { apiFetch, type ApiError } from "@/lib/api";
 
 interface Meal {
@@ -42,37 +43,11 @@ interface SymptomCheckin {
   created_at: string;
 }
 
-const categoryLabels: Record<string, string> = {
-  homemade: "Fait maison",
-  restaurant: "Restaurant",
-  takeout: "À emporter",
-  snack: "Collation",
-  fast_food: "Fast-food",
-  cafeteria: "Cantine",
-  family: "En famille",
-  friends: "Entre amis",
-  other: "Autre",
-};
-
 const delayOptions = [
   { value: 6, label: "Après 6h" },
   { value: 8, label: "Après 8h" },
   { value: 12, label: "Après 12h" },
 ];
-
-/** Symptom types matching the API oneof validation. */
-const symptomLabels: Record<string, string> = {
-  diarrhea: "Diarrhée",
-  stomach_ache: "Maux de ventre",
-  nausea: "Nausée",
-  bloating: "Ballonnements",
-  heartburn: "Brûlures d'estomac",
-  cramps: "Crampes",
-  constipation: "Constipation",
-  gas: "Gaz",
-  reflux: "Reflux",
-  fatigue: "Fatigue",
-};
 
 /** Severity display with colored dots. */
 function SeverityDots({ severity }: { severity: number }) {
@@ -94,6 +69,21 @@ export default function MealDetailPage() {
   const params = useParams();
   const router = useRouter();
   const mealId = params.id as string;
+  const { options: mealCategories } = useCustomOptions("meal_category");
+  const { options: symptomTypes } = useCustomOptions("symptom_type");
+
+  /** Build lookup maps from user's custom options. */
+  const categoryLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const cat of mealCategories) map[cat.value] = cat.label;
+    return map;
+  }, [mealCategories]);
+
+  const symptomLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of symptomTypes) map[s.value] = s.label;
+    return map;
+  }, [symptomTypes]);
 
   const [meal, setMeal] = useState<Meal | null>(null);
   const [checkins, setCheckins] = useState<SymptomCheckin[]>([]);
@@ -233,19 +223,21 @@ export default function MealDetailPage() {
         </div>
       ) : null}
 
-      {/* Meal info */}
-      <Card padding="lg" className="mb-4">
-        <p className="mb-2 text-sm text-foreground">{meal.description}</p>
-        <div className="flex items-center gap-1.5 text-xs text-foreground-secondary">
-          <Clock size={12} />
-          <span>
-            {mealDate.toLocaleDateString("fr-FR")} à{" "}
-            {mealDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-      </Card>
+      <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-8">
+        {/* Left: Meal info */}
+        <Card padding="lg">
+          <p className="mb-2 text-sm text-foreground">{meal.description}</p>
+          <div className="flex items-center gap-1.5 text-xs text-foreground-secondary">
+            <Clock size={12} />
+            <span>
+              {mealDate.toLocaleDateString("fr-FR")} à{" "}
+              {mealDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+        </Card>
 
-      {/* Symptom check-ins */}
+        {/* Right: Symptom check-ins */}
+        <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-heading text-sm font-semibold">
           Symptômes signalés
@@ -291,13 +283,13 @@ export default function MealDetailPage() {
             Symptômes
           </p>
           <div className="mb-4 flex flex-wrap gap-1.5">
-            {Object.entries(symptomLabels).map(([type, label]) => {
-              const isSelected = checkinSymptoms.some((s) => s.type === type);
+            {symptomTypes.map((st) => {
+              const isSelected = checkinSymptoms.some((s) => s.type === st.value);
               return (
                 <button
-                  key={type}
+                  key={st.value}
                   type="button"
-                  onClick={() => toggleSymptom(type)}
+                  onClick={() => toggleSymptom(st.value)}
                   className={`
                     rounded-[--radius-full] border px-3 py-1 text-xs transition-all
                     ${
@@ -307,7 +299,7 @@ export default function MealDetailPage() {
                     }
                   `}
                 >
-                  {label}
+                  {st.label}
                 </button>
               );
             })}
@@ -414,6 +406,8 @@ export default function MealDetailPage() {
           ))}
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

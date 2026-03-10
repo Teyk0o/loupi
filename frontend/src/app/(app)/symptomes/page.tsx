@@ -5,11 +5,12 @@
  * Allows users to log symptoms that are not linked to a specific meal.
  */
 
-import { useState, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useMemo, type FormEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { useCustomOptions } from "@/hooks/useCustomOptions";
 import { apiFetch, type ApiError } from "@/lib/api";
 
 interface SymptomDetail {
@@ -24,20 +25,6 @@ interface SymptomEntry {
   entry_time: string;
   created_at: string;
 }
-
-/** Symptom types matching the API oneof validation. */
-const symptomLabels: Record<string, string> = {
-  diarrhea: "Diarrhée",
-  stomach_ache: "Maux de ventre",
-  nausea: "Nausée",
-  bloating: "Ballonnements",
-  heartburn: "Brûlures d'estomac",
-  cramps: "Crampes",
-  constipation: "Constipation",
-  gas: "Gaz",
-  reflux: "Reflux",
-  fatigue: "Fatigue",
-};
 
 function todayString(): string {
   return new Date().toISOString().split("T")[0];
@@ -64,9 +51,17 @@ function SeverityDots({ severity }: { severity: number }) {
 }
 
 export default function SymptomsPage() {
+  const { options: symptomTypes } = useCustomOptions("symptom_type");
   const [entries, setEntries] = useState<SymptomEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(todayString);
+
+  /** Build label lookup from user's custom options. */
+  const symptomLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of symptomTypes) map[s.value] = s.label;
+    return map;
+  }, [symptomTypes]);
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -191,13 +186,13 @@ export default function SymptomsPage() {
                 Symptômes ressentis
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {Object.entries(symptomLabels).map(([type, label]) => {
-                  const isSelected = symptoms.some((s) => s.type === type);
+                {symptomTypes.map((st) => {
+                  const isSelected = symptoms.some((s) => s.type === st.value);
                   return (
                     <button
-                      key={type}
+                      key={st.value}
                       type="button"
-                      onClick={() => toggleSymptom(type)}
+                      onClick={() => toggleSymptom(st.value)}
                       className={`
                         rounded-[--radius-full] border px-3 py-1 text-xs transition-all
                         ${
@@ -207,7 +202,7 @@ export default function SymptomsPage() {
                         }
                       `}
                     >
-                      {label}
+                      {st.label}
                     </button>
                   );
                 })}
@@ -301,7 +296,7 @@ export default function SymptomsPage() {
           Aucun symptôme enregistré pour cette date
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry) => (
             <Card key={entry.id} padding="md">
               <div className="mb-2 flex items-center justify-between">

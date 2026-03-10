@@ -20,6 +20,7 @@ func Setup(
 	mealService *services.MealService,
 	symptomService *services.SymptomService,
 	wellnessService *services.WellnessService,
+	customOptionService *services.CustomOptionService,
 ) {
 	// Global middleware
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
@@ -33,6 +34,7 @@ func Setup(
 	mealHandler := handlers.NewMealHandler(mealService)
 	symptomHandler := handlers.NewSymptomHandler(symptomService)
 	wellnessHandler := handlers.NewWellnessHandler(wellnessService)
+	customOptionHandler := handlers.NewCustomOptionHandler(customOptionService)
 
 	// Health check
 	r.GET("/v1/health", func(c *gin.Context) {
@@ -83,5 +85,12 @@ func Setup(
 		api.GET("/wellness", wellnessHandler.GetByDate)
 		api.POST("/wellness", wellnessHandler.Upsert)
 		api.PUT("/wellness/:id", wellnessHandler.Update)
+
+		// Custom options (user-configurable lists)
+		api.GET("/options/:category", customOptionHandler.List)
+		api.POST("/options/:category", customOptionHandler.Create)
+		api.PUT("/options/:category/reorder", customOptionHandler.Reorder)
+		api.PUT("/options/item/:id", customOptionHandler.Update)
+		api.DELETE("/options/item/:id", customOptionHandler.Delete)
 	}
 }
