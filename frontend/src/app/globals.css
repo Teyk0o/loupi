@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────
+   Loupi — Design Tokens
+   Style: Soft & Warm
+   ────────────────────────────────────────────── */
+
+@theme inline {
+  /* Typography */
+  --font-heading: var(--font-poppins), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+
+  /* Semantic colors (resolve to CSS vars for theme switching) */
+  --color-primary: #48C7B0;
+  --color-primary-hover: #3BB5A0;
+  --color-primary-light: #48C7B033;
+  --color-secondary: #FFE6B3;
+  --color-secondary-hover: #FFD98A;
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-foreground: var(--text-primary);
+  --color-foreground-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-danger: #EF4444;
+  --color-danger-hover: #DC2626;
+  --color-warning: #F59E0B;
+  --color-success: #48C7B0;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ──────────────────────────────────────────────
+   Light mode (default)
+   ────────────────────────────────────────────── */
+
+:root {
+  --bg: #F9FBFC;
+  --surface: #FFFFFF;
+  --text-primary: #213547;
+  --text-secondary: #64748B;
+  --border: #E0E7FF;
+}
+
+/* ──────────────────────────────────────────────
+   Dark mode (system preference)
+   ────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1729;
+    --surface: #1A2537;
+    --text-primary: #E2E8F0;
+    --text-secondary: #94A3B8;
+    --border: #2A3A52;
+  }
+}
+
+/* ──────────────────────────────────────────────
+   Base styles
+   ────────────────────────────────────────────── */
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}

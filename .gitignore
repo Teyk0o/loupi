@@ -1,0 +1,49 @@
+# Dependencies
+frontend/node_modules/
+frontend/.pnpm-store/
+
+# Build outputs
+frontend/.next/
+frontend/out/
+api/bin/
+api/tmp/
+
+# Environment files
+.env
+.env.local
+.env.production
+frontend/.env.local
+frontend/.env.production
+api/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude
+.claude/
+CLAUDE.md
+
+# Other
+CAHIER_DES_CHARGES.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/data/
+docker/photos/
+
+# Logs
+*.log
+
+# Coverage & testing
+frontend/coverage/
+api/coverage/
+
+# Compiled Go binary
+loupi-api

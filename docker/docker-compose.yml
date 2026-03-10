@@ -1,0 +1,95 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - loupi
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.loupi.app
+    networks:
+      - loupi
+
+  api:
+    build:
+      context: ../api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - LOUPI_ENV=production
+      - LOUPI_DB_HOST=db
+      - LOUPI_DB_PORT=5432
+      - LOUPI_DB_NAME=loupi
+      - LOUPI_DB_USER=${DB_USER}
+      - LOUPI_DB_PASSWORD=${DB_PASSWORD}
+      - LOUPI_REDIS_HOST=redis
+      - LOUPI_REDIS_PORT=6379
+      - LOUPI_JWT_SECRET=${JWT_SECRET}
+      - LOUPI_ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    volumes:
+      - photos:/app/photos
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - loupi
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=loupi
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d loupi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - loupi
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - loupi
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+  photos:
+
+networks:
+  loupi:
+    driver: bridge
