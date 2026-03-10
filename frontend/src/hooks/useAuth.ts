@@ -66,6 +66,7 @@ export function useAuth(): UseAuthReturn {
     await apiFetch("/v1/auth/account", { method: "DELETE" });
     clearAuth();
     setUser(null);
+    window.location.href = "/login";
   }, []);
 
   return { user, isLoading, login, register, logout, deleteAccount };
