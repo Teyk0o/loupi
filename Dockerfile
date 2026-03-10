@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w
 # ---------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-deps
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
@@ -98,6 +98,8 @@ ENV PORT=3000
 
 # Caddy serves on 80 (HTTP) and 443 (HTTPS)
 EXPOSE 80 443
+
+USER loupi
 
 # Use tini as PID 1 for proper signal handling
 ENTRYPOINT ["/sbin/tini", "--"]
