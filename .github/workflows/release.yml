@@ -10,6 +10,7 @@ on:
   push:
     tags:
       - "v*"
+      - "*-rc*"
 
 permissions:
   contents: write
@@ -63,7 +64,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
           labels: |
             org.opencontainers.image.title=Loupi
             org.opencontainers.image.description=Free, open-source food & digestive symptom tracker
