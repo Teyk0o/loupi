@@ -14,10 +14,12 @@ import (
 func setupTestSymptomEnv(t *testing.T) (*SymptomService, *MealService, uuid.UUID, func()) {
 	t.Helper()
 	pool := setupTestDB(t)
+	rdb := setupTestRedis(t)
 	cfg := testConfig()
-	authSvc := NewAuthService(pool, cfg)
-	symptomSvc := NewSymptomService(pool)
-	mealSvc := NewMealService(pool)
+	enc := testEncryptor(t)
+	authSvc := NewAuthService(pool, rdb, cfg)
+	symptomSvc := NewSymptomService(pool, enc)
+	mealSvc := NewMealService(pool, enc)
 	ctx := context.Background()
 
 	email := "test-symptom-" + uuid.New().String()[:8] + "@loupi.test"
@@ -28,6 +30,7 @@ func setupTestSymptomEnv(t *testing.T) (*SymptomService, *MealService, uuid.UUID
 
 	cleanup := func() {
 		_ = authSvc.DeleteAccount(ctx, resp.User.ID)
+		rdb.Close()
 		pool.Close()
 	}
 

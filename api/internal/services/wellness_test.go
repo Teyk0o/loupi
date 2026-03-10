@@ -14,9 +14,11 @@ import (
 func setupTestWellnessEnv(t *testing.T) (*WellnessService, uuid.UUID, func()) {
 	t.Helper()
 	pool := setupTestDB(t)
+	rdb := setupTestRedis(t)
 	cfg := testConfig()
-	authSvc := NewAuthService(pool, cfg)
-	wellnessSvc := NewWellnessService(pool)
+	enc := testEncryptor(t)
+	authSvc := NewAuthService(pool, rdb, cfg)
+	wellnessSvc := NewWellnessService(pool, enc)
 	ctx := context.Background()
 
 	email := "test-wellness-" + uuid.New().String()[:8] + "@loupi.test"
@@ -27,6 +29,7 @@ func setupTestWellnessEnv(t *testing.T) (*WellnessService, uuid.UUID, func()) {
 
 	cleanup := func() {
 		_ = authSvc.DeleteAccount(ctx, resp.User.ID)
+		rdb.Close()
 		pool.Close()
 	}
 
