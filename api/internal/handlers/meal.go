@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,13 +33,14 @@ func (h *MealHandler) Create(c *gin.Context) {
 
 	var req models.CreateMealRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
 	meal, err := h.mealService.Create(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("create meal error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to create meal"})
 		return
 	}
 
@@ -65,6 +67,7 @@ func (h *MealHandler) GetByID(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Meal not found"})
 			return
 		}
+		log.Printf("get meal error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to get meal"})
 		return
 	}
@@ -88,7 +91,8 @@ func (h *MealHandler) ListByDate(c *gin.Context) {
 
 	meals, err := h.mealService.ListByDate(c.Request.Context(), userID, date)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("list meals error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to list meals"})
 		return
 	}
 
@@ -111,7 +115,7 @@ func (h *MealHandler) Update(c *gin.Context) {
 
 	var req models.UpdateMealRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -121,7 +125,8 @@ func (h *MealHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Meal not found"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("update meal error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to update meal"})
 		return
 	}
 
@@ -147,6 +152,7 @@ func (h *MealHandler) Delete(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Meal not found"})
 			return
 		}
+		log.Printf("delete meal error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to delete meal"})
 		return
 	}
@@ -174,6 +180,7 @@ func (h *MealHandler) GetCheckins(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Meal not found"})
 			return
 		}
+		log.Printf("get checkins error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to get check-ins"})
 		return
 	}
@@ -197,7 +204,7 @@ func (h *MealHandler) CreateCheckin(c *gin.Context) {
 
 	var req models.CreateCheckinRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -207,7 +214,8 @@ func (h *MealHandler) CreateCheckin(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Meal not found"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("create checkin error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to create check-in"})
 		return
 	}
 

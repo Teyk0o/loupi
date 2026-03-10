@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,13 +33,14 @@ func (h *WellnessHandler) Upsert(c *gin.Context) {
 
 	var req models.CreateWellnessRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
 	entry, err := h.wellnessService.Upsert(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("upsert wellness error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to save wellness entry"})
 		return
 	}
 
@@ -65,6 +67,7 @@ func (h *WellnessHandler) GetByDate(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "No wellness entry for this date"})
 			return
 		}
+		log.Printf("get wellness error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to get wellness entry"})
 		return
 	}
@@ -88,7 +91,7 @@ func (h *WellnessHandler) Update(c *gin.Context) {
 
 	var req models.CreateWellnessRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -98,7 +101,8 @@ func (h *WellnessHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Wellness entry not found"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("update wellness error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to update wellness entry"})
 		return
 	}
 
