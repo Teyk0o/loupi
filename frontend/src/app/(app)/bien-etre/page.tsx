@@ -100,8 +100,13 @@ function MetricSelector({
   );
 }
 
+/** Format current date as YYYY-MM-DD (local timezone). */
 function todayString(): string {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export default function WellnessPage() {
@@ -384,14 +389,14 @@ export default function WellnessPage() {
           {showSportForm ? (
             <div className="flex flex-col gap-3 rounded-[--radius-md] border border-border p-3">
               {/* Sport type */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {sportTypes.map((st) => (
                   <button
                     key={st.value}
                     type="button"
                     onClick={() => setSportType(st.value)}
                     className={`
-                      rounded-[--radius-full] border px-2.5 py-1 text-xs transition-all
+                      rounded-[--radius-full] border px-3 py-1.5 text-sm transition-all
                       ${
                         sportType === st.value
                           ? "border-primary bg-primary-light text-foreground"

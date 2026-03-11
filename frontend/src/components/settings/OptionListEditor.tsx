@@ -85,7 +85,7 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
   if (isLoading) {
     return (
       <Card padding="lg">
-        <h3 className="mb-3 font-heading text-sm font-semibold">{title}</h3>
+        <h3 className="mb-4 font-heading text-base font-semibold">{title}</h3>
         <div className="flex justify-center py-4">
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
@@ -95,38 +95,38 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
 
   return (
     <Card padding="lg">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-heading text-sm font-semibold">{title}</h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-heading text-base font-semibold">{title}</h3>
         <button
           onClick={() => { setShowAddForm(!showAddForm); setActionError(""); }}
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
         >
-          <Plus size={14} />
+          <Plus size={18} />
           Ajouter
         </button>
       </div>
 
       {error || actionError ? (
-        <p className="mb-2 text-xs text-danger">{error || actionError}</p>
+        <p className="mb-3 text-sm text-danger">{error || actionError}</p>
       ) : null}
 
       {/* Add form */}
       {showAddForm ? (
-        <div className="mb-3 flex flex-col gap-2 rounded-[--radius-sm] border border-border p-3">
+        <div className="mb-4 flex flex-col gap-3 rounded-[--radius-md] border border-border p-4">
           <div className="flex gap-2">
             {showEmoji ? (
               <input
                 value={newEmoji}
                 onChange={(e) => setNewEmoji(e.target.value)}
                 placeholder="🔹"
-                className="w-12 rounded-[--radius-sm] border border-border bg-surface px-2 py-1.5 text-center text-sm outline-none focus:border-primary"
+                className="w-14 rounded-[--radius-sm] border border-border bg-surface px-2 py-2.5 text-center text-base outline-none focus:border-primary"
               />
             ) : null}
             <input
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="Nom de l'option..."
-              className="flex-1 rounded-[--radius-sm] border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary"
+              className="flex-1 rounded-[--radius-sm] border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary"
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               autoFocus
             />
@@ -134,13 +134,13 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
           <div className="flex gap-2">
             <Button
               variant="outline"
-              className="flex-1 text-xs"
+              className="flex-1"
               onClick={() => { setShowAddForm(false); setNewLabel(""); setNewEmoji(""); }}
             >
               Annuler
             </Button>
             <Button
-              className="flex-1 text-xs"
+              className="flex-1"
               onClick={handleAdd}
               isLoading={isSubmitting}
               disabled={!newLabel.trim()}
@@ -156,7 +156,7 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
         {options.map((option) => (
           <div
             key={option.id}
-            className="flex items-center gap-2 rounded-[--radius-sm] px-2 py-1.5 hover:bg-background"
+            className="flex items-center gap-3 rounded-[--radius-sm] px-3 py-2.5 hover:bg-background"
           >
             {editingId === option.id ? (
               /* Edit mode */
@@ -165,56 +165,56 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
                   <input
                     value={editEmoji}
                     onChange={(e) => setEditEmoji(e.target.value)}
-                    className="w-10 rounded-[--radius-sm] border border-border bg-surface px-1 py-1 text-center text-sm outline-none focus:border-primary"
+                    className="w-12 rounded-[--radius-sm] border border-border bg-surface px-2 py-2 text-center text-base outline-none focus:border-primary"
                   />
                 ) : null}
                 <input
                   value={editLabel}
                   onChange={(e) => setEditLabel(e.target.value)}
-                  className="flex-1 rounded-[--radius-sm] border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-primary"
+                  className="flex-1 rounded-[--radius-sm] border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
                   onKeyDown={(e) => e.key === "Enter" && handleUpdate()}
                   autoFocus
                 />
                 <button
                   onClick={handleUpdate}
                   disabled={isSubmitting}
-                  className="rounded-[--radius-sm] p-1 text-primary hover:bg-primary-light"
+                  className="rounded-[--radius-sm] p-2 text-primary hover:bg-primary-light"
                 >
-                  <Check size={14} />
+                  <Check size={18} />
                 </button>
                 <button
                   onClick={() => setEditingId(null)}
-                  className="rounded-[--radius-sm] p-1 text-foreground-secondary hover:text-foreground"
+                  className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:text-foreground"
                 >
-                  <X size={14} />
+                  <X size={18} />
                 </button>
               </>
             ) : (
               /* Display mode */
               <>
                 {option.emoji ? (
-                  <span className="w-6 text-center text-sm">{option.emoji}</span>
+                  <span className="w-8 text-center text-lg">{option.emoji}</span>
                 ) : null}
                 <span className="flex-1 text-sm text-foreground">{option.label}</span>
-                <span className="text-[10px] text-foreground-secondary">{option.value}</span>
+                <span className="text-xs text-foreground-secondary">{option.value}</span>
                 <button
                   onClick={() => startEdit(option)}
-                  className="rounded-[--radius-sm] p-1 text-foreground-secondary hover:text-foreground"
+                  className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:text-foreground"
                 >
-                  <Pencil size={12} />
+                  <Pencil size={16} />
                 </button>
                 <button
                   onClick={() => handleDelete(option.id)}
-                  className="rounded-[--radius-sm] p-1 text-foreground-secondary hover:text-danger"
+                  className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:text-danger"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={16} />
                 </button>
               </>
             )}
           </div>
         ))}
         {options.length === 0 ? (
-          <p className="py-2 text-center text-xs text-foreground-secondary">
+          <p className="py-3 text-center text-sm text-foreground-secondary">
             Aucune option configurée
           </p>
         ) : null}

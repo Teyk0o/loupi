@@ -35,16 +35,25 @@ func NewAuthHandler(authService *services.AuthService, audit *utils.AuditLogger,
 	return &AuthHandler{authService: authService, audit: audit, cfg: cfg, loginLimiter: loginLimiter}
 }
 
+// cookieSameSite returns SameSite mode based on environment.
+// Lax in development (cross-port), Strict in production (same domain).
+func (h *AuthHandler) cookieSameSite() http.SameSite {
+	if h.cfg.IsDevelopment() {
+		return http.SameSiteLaxMode
+	}
+	return http.SameSiteStrictMode
+}
+
 // setAuthCookies sets httpOnly secure cookies for access and refresh tokens.
 func (h *AuthHandler) setAuthCookies(c *gin.Context, tokens *models.AuthResponse) {
-	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetSameSite(h.cookieSameSite())
 	c.SetCookie(accessCookieName, tokens.AccessToken, accessMaxAge, "/", h.cfg.CookieDomain, h.cfg.CookieSecure, true)
 	c.SetCookie(refreshCookieName, tokens.RefreshToken, refreshMaxAge, "/v1/auth", h.cfg.CookieDomain, h.cfg.CookieSecure, true)
 }
 
 // clearAuthCookies removes auth cookies.
 func (h *AuthHandler) clearAuthCookies(c *gin.Context) {
-	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetSameSite(h.cookieSameSite())
 	c.SetCookie(accessCookieName, "", -1, "/", h.cfg.CookieDomain, h.cfg.CookieSecure, true)
 	c.SetCookie(refreshCookieName, "", -1, "/v1/auth", h.cfg.CookieDomain, h.cfg.CookieSecure, true)
 }

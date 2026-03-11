@@ -50,6 +50,8 @@ export function useAuth(): UseAuthReturn {
       body: JSON.stringify({ email, password }),
     });
     setUser(response.user);
+    // Full page reload so the browser sends the newly-set cookie to Next.js middleware
+    window.location.href = "/journal";
   }, []);
 
   const register = useCallback(async (email: string, password: string, firstName?: string) => {
@@ -58,6 +60,7 @@ export function useAuth(): UseAuthReturn {
       body: JSON.stringify({ email, password, first_name: firstName || undefined }),
     });
     setUser(response.user);
+    window.location.href = "/journal";
   }, []);
 
   const logout = useCallback(async () => {

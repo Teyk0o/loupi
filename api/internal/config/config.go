@@ -54,7 +54,7 @@ func Load() (*Config, error) {
 		JWTSecret:      getEnv("LOUPI_JWT_SECRET", ""),
 		EncryptionKey:  getEnv("LOUPI_ENCRYPTION_KEY", ""),
 		PhotosDir:      getEnv("LOUPI_PHOTOS_DIR", "./photos"),
-		AllowedOrigins: getEnv("LOUPI_ALLOWED_ORIGINS", "http://localhost:3000"),
+		AllowedOrigins: getEnv("LOUPI_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"),
 		CookieDomain:   getEnv("LOUPI_COOKIE_DOMAIN", ""),
 	}
 

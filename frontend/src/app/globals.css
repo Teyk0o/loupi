@@ -64,6 +64,10 @@
    Base styles
    ────────────────────────────────────────────── */
 
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text-primary);

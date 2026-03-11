@@ -24,7 +24,7 @@ interface QuickAction {
 }
 
 const actions: QuickAction[] = [
-  { label: "Repas", href: "/ajouter", icon: UtensilsCrossed, color: "bg-primary" },
+  { label: "Repas", href: "/journal?add=meal", icon: UtensilsCrossed, color: "bg-primary" },
   { label: "Symptômes", href: "/symptomes?add=true", icon: Stethoscope, color: "bg-amber-500" },
   { label: "Bien-être", href: "/bien-etre", icon: Heart, color: "bg-rose-400" },
 ];
@@ -52,7 +52,7 @@ export function FloatingAddButton() {
   }
 
   return (
-    <div ref={menuRef} className="fixed bottom-20 right-4 z-40 h-14 w-14 md:bottom-6">
+    <div ref={menuRef} className="fixed bottom-24 right-4 z-40 h-14 w-14 md:bottom-6">
       {/* Expandable menu — positioned absolutely so it doesn't shift the FAB */}
       {isOpen ? (
         <div className="absolute bottom-16 right-0 flex flex-col gap-2 pb-2">
@@ -64,7 +64,7 @@ export function FloatingAddButton() {
                 onClick={() => handleAction(action.href)}
                 className="flex items-center gap-3 self-end whitespace-nowrap"
               >
-                <span className="rounded-[--radius-md] bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-md">
+                <span className="rounded-[--radius-md] bg-surface px-3 py-1.5 text-sm font-medium text-foreground shadow-md">
                   {action.label}
                 </span>
                 <span

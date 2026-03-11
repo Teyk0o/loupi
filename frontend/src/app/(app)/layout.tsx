@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center border-b border-border px-4 md:hidden">
           <Logo width={90} height={30} />
         </header>
-        <main className="mx-auto max-w-lg px-4 pb-20 pt-4 md:max-w-none md:px-8 md:pb-6 md:pt-6 lg:px-12">
+        <main className="mx-auto max-w-lg px-4 pb-24 pt-4 md:max-w-none md:px-8 md:pb-6 md:pt-6 lg:px-12">
           {children}
         </main>
       </div>
