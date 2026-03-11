@@ -139,13 +139,14 @@ jobs:
             MSG=$(printf '%s' "$line" | cut -d' ' -f2-)
             SHORT_HASH="${HASH:0:7}"
 
+            ENTRY="$(printf '\n- %s (%s)' "$MSG" "$SHORT_HASH")"
             case "$MSG" in
-              feat*)  FEAT=$(printf '%s\n- %s (`%s`)' "$FEAT" "$MSG" "$SHORT_HASH") ;;
-              fix*)   FIX=$(printf '%s\n- %s (`%s`)' "$FIX" "$MSG" "$SHORT_HASH") ;;
-              docs*)  DOCS=$(printf '%s\n- %s (`%s`)' "$DOCS" "$MSG" "$SHORT_HASH") ;;
+              feat*)  FEAT="${FEAT}${ENTRY}" ;;
+              fix*)   FIX="${FIX}${ENTRY}" ;;
+              docs*)  DOCS="${DOCS}${ENTRY}" ;;
               chore*|ci*|style*|refactor*|perf*|test*)
-                      CHORE=$(printf '%s\n- %s (`%s`)' "$CHORE" "$MSG" "$SHORT_HASH") ;;
-              *)      OTHER=$(printf '%s\n- %s (`%s`)' "$OTHER" "$MSG" "$SHORT_HASH") ;;
+                      CHORE="${CHORE}${ENTRY}" ;;
+              *)      OTHER="${OTHER}${ENTRY}" ;;
             esac
           done < <(git log --oneline "${PREV_TAG}..${TAG_NAME}" 2>/dev/null || git log --oneline)
 
