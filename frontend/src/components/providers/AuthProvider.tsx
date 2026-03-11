@@ -18,7 +18,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
 

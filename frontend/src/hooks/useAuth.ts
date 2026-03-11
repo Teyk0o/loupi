@@ -2,17 +2,15 @@
 
 /**
  * Authentication hook for managing user state across the application.
- * Provides login, register, logout, and current user access.
+ * Uses cookie-based auth — no tokens stored in localStorage.
+ * Checks session validity on mount via /v1/auth/me.
  */
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  getAuth,
-  setAuth,
-  clearAuth,
-  apiPublicFetch,
   apiFetch,
-  type TokenResponse,
+  apiPublicFetch,
+  type CookieAuthResponse,
   type UserResponse,
 } from "@/lib/api";
 
@@ -21,7 +19,7 @@ interface UseAuthReturn {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
 
@@ -29,42 +27,51 @@ export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore auth state from localStorage on mount
+  // Check session validity on mount
   useEffect(() => {
-    const auth = getAuth();
-    if (auth) {
-      setUser(auth.user);
+    let cancelled = false;
+    async function checkSession() {
+      try {
+        const userData = await apiFetch<UserResponse>("/v1/auth/me");
+        if (!cancelled) setUser(userData);
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     }
-    setIsLoading(false);
+    checkSession();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const tokens = await apiPublicFetch<TokenResponse>("/v1/auth/login", {
+    const response = await apiPublicFetch<CookieAuthResponse>("/v1/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setAuth(tokens);
-    setUser(tokens.user);
+    setUser(response.user);
   }, []);
 
   const register = useCallback(async (email: string, password: string, firstName?: string) => {
-    const tokens = await apiPublicFetch<TokenResponse>("/v1/auth/register", {
+    const response = await apiPublicFetch<CookieAuthResponse>("/v1/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, first_name: firstName || undefined }),
     });
-    setAuth(tokens);
-    setUser(tokens.user);
+    setUser(response.user);
   }, []);
 
-  const logout = useCallback(() => {
-    clearAuth();
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch("/v1/auth/logout", { method: "POST" });
+    } catch {
+      // Best effort — cookies will be cleared server-side
+    }
     setUser(null);
     window.location.href = "/login";
   }, []);
 
   const deleteAccount = useCallback(async () => {
     await apiFetch("/v1/auth/account", { method: "DELETE" });
-    clearAuth();
     setUser(null);
     window.location.href = "/login";
   }, []);

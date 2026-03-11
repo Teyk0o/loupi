@@ -21,9 +21,11 @@ func createTestUser(t *testing.T, pool interface{ QueryRow(ctx context.Context, 
 func setupTestMealEnv(t *testing.T) (*MealService, uuid.UUID, func()) {
 	t.Helper()
 	pool := setupTestDB(t)
+	rdb := setupTestRedis(t)
 	cfg := testConfig()
-	authSvc := NewAuthService(pool, cfg)
-	mealSvc := NewMealService(pool)
+	enc := testEncryptor(t)
+	authSvc := NewAuthService(pool, rdb, cfg)
+	mealSvc := NewMealService(pool, enc)
 	ctx := context.Background()
 
 	email := "test-meal-" + uuid.New().String()[:8] + "@loupi.test"
@@ -34,6 +36,7 @@ func setupTestMealEnv(t *testing.T) (*MealService, uuid.UUID, func()) {
 
 	cleanup := func() {
 		_ = authSvc.DeleteAccount(ctx, resp.User.ID)
+		rdb.Close()
 		pool.Close()
 	}
 

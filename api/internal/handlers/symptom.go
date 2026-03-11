@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,13 +33,14 @@ func (h *SymptomHandler) Create(c *gin.Context) {
 
 	var req models.CreateSymptomEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
 	entry, err := h.symptomService.Create(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("create symptom entry error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to create symptom entry"})
 		return
 	}
 
@@ -61,7 +63,8 @@ func (h *SymptomHandler) ListByDate(c *gin.Context) {
 
 	entries, err := h.symptomService.ListByDate(c.Request.Context(), userID, date)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("list symptom entries error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to list symptom entries"})
 		return
 	}
 
@@ -84,7 +87,7 @@ func (h *SymptomHandler) Update(c *gin.Context) {
 
 	var req models.CreateSymptomEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -94,7 +97,8 @@ func (h *SymptomHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Symptom entry not found"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("update symptom entry error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to update symptom entry"})
 		return
 	}
 
@@ -120,6 +124,7 @@ func (h *SymptomHandler) Delete(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Symptom entry not found"})
 			return
 		}
+		log.Printf("delete symptom entry error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to delete symptom entry"})
 		return
 	}
@@ -143,7 +148,7 @@ func (h *SymptomHandler) UpdateCheckin(c *gin.Context) {
 
 	var req models.CreateCheckinRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -153,7 +158,8 @@ func (h *SymptomHandler) UpdateCheckin(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Check-in not found"})
 			return
 		}
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: err.Error()})
+		log.Printf("update checkin error: %v", err)
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to update check-in"})
 		return
 	}
 
@@ -179,6 +185,7 @@ func (h *SymptomHandler) DeleteCheckin(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Check-in not found"})
 			return
 		}
+		log.Printf("delete checkin error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to delete check-in"})
 		return
 	}

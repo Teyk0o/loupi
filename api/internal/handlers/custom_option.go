@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,11 +38,11 @@ func (h *CustomOptionHandler) List(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad_request", Message: "Invalid category. Must be one of: symptom_type, meal_category, sport_type"})
 			return
 		}
+		log.Printf("list options error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to list options"})
 		return
 	}
 
-	// Return empty array instead of null.
 	if options == nil {
 		options = []models.CustomOption{}
 	}
@@ -61,7 +62,7 @@ func (h *CustomOptionHandler) Create(c *gin.Context) {
 
 	var req models.CreateCustomOptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -75,6 +76,7 @@ func (h *CustomOptionHandler) Create(c *gin.Context) {
 			c.JSON(http.StatusConflict, models.ErrorResponse{Error: "conflict", Message: "An option with this value already exists"})
 			return
 		}
+		log.Printf("create option error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to create option"})
 		return
 	}
@@ -98,7 +100,7 @@ func (h *CustomOptionHandler) Update(c *gin.Context) {
 
 	var req models.UpdateCustomOptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -108,6 +110,7 @@ func (h *CustomOptionHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Option not found"})
 			return
 		}
+		log.Printf("update option error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to update option"})
 		return
 	}
@@ -134,6 +137,7 @@ func (h *CustomOptionHandler) Delete(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "Option not found"})
 			return
 		}
+		log.Printf("delete option error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to delete option"})
 		return
 	}
@@ -153,7 +157,7 @@ func (h *CustomOptionHandler) Reorder(c *gin.Context) {
 
 	var req models.ReorderCustomOptionsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "validation_error", Message: "Invalid input data"})
 		return
 	}
 
@@ -166,6 +170,7 @@ func (h *CustomOptionHandler) Reorder(c *gin.Context) {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "not_found", Message: "One or more option IDs not found"})
 			return
 		}
+		log.Printf("reorder options error: %v", err)
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal_error", Message: "Failed to reorder options"})
 		return
 	}

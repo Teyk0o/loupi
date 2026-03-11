@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,7 +12,9 @@ import (
 
 func TestRateLimiter_AllowsUnderLimit(t *testing.T) {
 	r := gin.New()
-	rl := NewRateLimiter(5, 1*time.Minute)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rl := NewRateLimiter(ctx, 5, 1*time.Minute)
 	r.Use(rl.Middleware())
 	r.GET("/test", func(c *gin.Context) {
 		c.Status(http.StatusOK)
@@ -31,7 +34,9 @@ func TestRateLimiter_AllowsUnderLimit(t *testing.T) {
 
 func TestRateLimiter_BlocksOverLimit(t *testing.T) {
 	r := gin.New()
-	rl := NewRateLimiter(3, 1*time.Minute)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rl := NewRateLimiter(ctx, 3, 1*time.Minute)
 	r.Use(rl.Middleware())
 	r.GET("/test", func(c *gin.Context) {
 		c.Status(http.StatusOK)
@@ -58,7 +63,9 @@ func TestRateLimiter_BlocksOverLimit(t *testing.T) {
 
 func TestRateLimiter_DifferentIPsIndependent(t *testing.T) {
 	r := gin.New()
-	rl := NewRateLimiter(2, 1*time.Minute)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rl := NewRateLimiter(ctx, 2, 1*time.Minute)
 	r.Use(rl.Middleware())
 	r.GET("/test", func(c *gin.Context) {
 		c.Status(http.StatusOK)

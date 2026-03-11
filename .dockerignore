@@ -1,0 +1,10 @@
+.git
+.github
+.env
+.env.*
+node_modules
+*.log
+docker/data
+docs/
+*.md
+!README.md

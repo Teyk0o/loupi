@@ -16,29 +16,38 @@ import (
 const contextKeyUserID = "userID"
 
 // Auth returns a middleware that validates JWT access tokens.
-// It extracts the token from the Authorization header (Bearer scheme)
-// and stores the authenticated user ID in the request context.
+// It first checks for the loupi_access cookie, then falls back to the
+// Authorization header (Bearer scheme) for API clients.
+// Tokens are also checked against the Redis blacklist.
 func Auth(authService *services.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
-		if header == "" {
+		var tokenString string
+
+		// Try cookie first (browser clients)
+		if cookie, err := c.Cookie("loupi_access"); err == nil && cookie != "" {
+			tokenString = cookie
+		}
+
+		// Fall back to Authorization header (API clients)
+		if tokenString == "" {
+			header := c.GetHeader("Authorization")
+			if header != "" {
+				parts := strings.SplitN(header, " ", 2)
+				if len(parts) == 2 && parts[0] == "Bearer" {
+					tokenString = parts[1]
+				}
+			}
+		}
+
+		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Error:   "unauthorized",
-				Message: "Missing authorization header",
+				Message: "Authentication required",
 			})
 			return
 		}
 
-		parts := strings.SplitN(header, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
-				Error:   "unauthorized",
-				Message: "Invalid authorization header format",
-			})
-			return
-		}
-
-		userID, err := authService.ValidateAccessToken(parts[1])
+		userID, _, err := authService.ValidateAccessToken(c.Request.Context(), tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, models.ErrorResponse{
 				Error:   "unauthorized",

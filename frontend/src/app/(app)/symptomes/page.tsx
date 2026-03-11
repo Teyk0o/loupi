@@ -139,7 +139,7 @@ export default function SymptomsPage() {
       await apiFetch(`/v1/symptoms/${id}`, { method: "DELETE" });
       await fetchEntries(selectedDate);
     } catch {
-      // Silent fail
+      setError("Erreur lors de la suppression");
     }
   }
 
@@ -257,6 +257,7 @@ export default function SymptomsPage() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Notes (optionnel)..."
               rows={2}
+              maxLength={1000}
               className="
                 w-full resize-none rounded-[--radius-md] border border-border
                 bg-surface px-3 py-2 text-sm text-foreground outline-none

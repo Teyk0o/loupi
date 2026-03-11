@@ -6,9 +6,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/teyk0o/loupi/api/internal/config"
 	"github.com/teyk0o/loupi/api/internal/models"
+	"github.com/teyk0o/loupi/api/internal/utils"
 )
 
 // testConfig returns a config suitable for testing.
@@ -40,6 +42,34 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
+// setupTestRedis connects to the test Redis instance.
+// Requires Redis running (docker-compose.dev.yml).
+func setupTestRedis(t *testing.T) *redis.Client {
+	t.Helper()
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "redis_dev",
+	})
+
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		rdb.Close()
+		t.Skipf("Skipping test: Redis not available: %v", err)
+	}
+
+	return rdb
+}
+
+// testEncryptor returns an Encryptor suitable for testing.
+func testEncryptor(t *testing.T) *utils.Encryptor {
+	t.Helper()
+	enc, err := utils.NewEncryptor("0000000000000000000000000000000000000000000000000000000000000000")
+	if err != nil {
+		t.Fatalf("failed to create test encryptor: %v", err)
+	}
+	return enc
+}
+
 // cleanupTestUser removes a test user by email.
 func cleanupTestUser(t *testing.T, pool *pgxpool.Pool, email string) {
 	t.Helper()
@@ -49,9 +79,11 @@ func cleanupTestUser(t *testing.T, pool *pgxpool.Pool, email string) {
 func TestRegister_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-register-success@loupi.test"
 
@@ -86,9 +118,11 @@ func TestRegister_Success(t *testing.T) {
 func TestRegister_DuplicateEmail(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-register-dup@loupi.test"
 
@@ -115,9 +149,11 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 func TestLogin_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-login-success@loupi.test"
 	password := "SecurePass123#"
@@ -146,9 +182,11 @@ func TestLogin_Success(t *testing.T) {
 func TestLogin_WrongPassword(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-login-wrong@loupi.test"
 
@@ -169,9 +207,11 @@ func TestLogin_WrongPassword(t *testing.T) {
 func TestLogin_NonexistentUser(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 
 	_, err := svc.Login(ctx, models.LoginRequest{Email: "nonexistent@loupi.test", Password: "whatever"})
@@ -183,9 +223,11 @@ func TestLogin_NonexistentUser(t *testing.T) {
 func TestRefreshToken_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-refresh@loupi.test"
 
@@ -213,9 +255,11 @@ func TestRefreshToken_Success(t *testing.T) {
 func TestRefreshToken_InvalidToken(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 
 	_, err := svc.RefreshToken(ctx, "invalid-token")
@@ -227,9 +271,11 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 func TestRefreshToken_AccessTokenRejected(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-refresh-reject@loupi.test"
 
@@ -251,9 +297,11 @@ func TestRefreshToken_AccessTokenRejected(t *testing.T) {
 func TestValidateAccessToken_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-validate@loupi.test"
 
@@ -265,7 +313,7 @@ func TestValidateAccessToken_Success(t *testing.T) {
 		t.Fatalf("register failed: %v", err)
 	}
 
-	userID, err := svc.ValidateAccessToken(resp.AccessToken)
+	userID, _, err := svc.ValidateAccessToken(ctx, resp.AccessToken)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -278,9 +326,11 @@ func TestValidateAccessToken_Success(t *testing.T) {
 func TestValidateAccessToken_RefreshTokenRejected(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-validate-reject@loupi.test"
 
@@ -293,7 +343,7 @@ func TestValidateAccessToken_RefreshTokenRejected(t *testing.T) {
 	}
 
 	// Using a refresh token as access token should fail
-	_, err = svc.ValidateAccessToken(resp.RefreshToken)
+	_, _, err = svc.ValidateAccessToken(ctx, resp.RefreshToken)
 	if err == nil {
 		t.Fatal("expected error when using refresh token as access token")
 	}
@@ -302,9 +352,11 @@ func TestValidateAccessToken_RefreshTokenRejected(t *testing.T) {
 func TestDeleteAccount_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-delete@loupi.test"
 
@@ -330,9 +382,11 @@ func TestDeleteAccount_Success(t *testing.T) {
 func TestDeleteAccount_NonexistentUser(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 
 	err := svc.DeleteAccount(ctx, uuid.New())
@@ -344,9 +398,11 @@ func TestDeleteAccount_NonexistentUser(t *testing.T) {
 func TestGetUserByID_Success(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 	email := "test-getbyid@loupi.test"
 
@@ -374,9 +430,11 @@ func TestGetUserByID_Success(t *testing.T) {
 func TestGetUserByID_NotFound(t *testing.T) {
 	pool := setupTestDB(t)
 	defer pool.Close()
+	rdb := setupTestRedis(t)
+	defer rdb.Close()
 
 	cfg := testConfig()
-	svc := NewAuthService(pool, cfg)
+	svc := NewAuthService(pool, rdb, cfg)
 	ctx := context.Background()
 
 	_, err := svc.GetUserByID(ctx, uuid.New())

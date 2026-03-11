@@ -9,7 +9,7 @@ import (
 // CustomOption represents a user-configurable option (symptom type, meal category, sport type).
 type CustomOption struct {
 	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
+	UserID    uuid.UUID `json:"-"`
 	Category  string    `json:"category"`
 	Value     string    `json:"value"`
 	Label     string    `json:"label"`

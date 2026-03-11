@@ -19,14 +19,15 @@ services:
       - LOUPI_DB_NAME=${LOUPI_DB_NAME:-loupi}
       - LOUPI_DB_USER=${LOUPI_DB_USER:-loupi}
       - LOUPI_DB_PASSWORD=${LOUPI_DB_PASSWORD:?Set LOUPI_DB_PASSWORD in .env}
-      - LOUPI_DB_SSL=disable
+      - LOUPI_DB_SSL=require
       - LOUPI_REDIS_HOST=redis
       - LOUPI_REDIS_PORT=6379
+      - LOUPI_REDIS_PASSWORD=${LOUPI_REDIS_PASSWORD:?Set LOUPI_REDIS_PASSWORD in .env}
       - LOUPI_JWT_SECRET=${LOUPI_JWT_SECRET:?Set LOUPI_JWT_SECRET in .env}
       - LOUPI_ENCRYPTION_KEY=${LOUPI_ENCRYPTION_KEY:?Set LOUPI_ENCRYPTION_KEY in .env}
       - LOUPI_DOMAIN=${LOUPI_DOMAIN:-:80}
       - LOUPI_API_DOMAIN=${LOUPI_API_DOMAIN:-}
-      - LOUPI_ALLOWED_ORIGINS=${LOUPI_ALLOWED_ORIGINS:-*}
+      - LOUPI_ALLOWED_ORIGINS=${LOUPI_ALLOWED_ORIGINS:?Set LOUPI_ALLOWED_ORIGINS in .env}
     volumes:
       - loupi_photos:/app/photos
       - caddy_data:/data/caddy
@@ -36,6 +37,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - frontend-net
+      - backend-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
 
   db:
     image: postgres:16-alpine
@@ -51,18 +64,49 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - FOWNER
+      - DAC_READ_SEARCH
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${LOUPI_REDIS_PASSWORD:?Set LOUPI_REDIS_PASSWORD in .env}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${LOUPI_REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend-net
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
 volumes:
   postgres_data:
@@ -70,3 +114,7 @@ volumes:
   loupi_photos:
   caddy_data:
   caddy_config:
+
+networks:
+  frontend-net:
+  backend-net:

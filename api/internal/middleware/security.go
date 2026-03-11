@@ -10,7 +10,8 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Header("X-XSS-Protection", "0")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		c.Header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
 		c.Next()
 	}
 }

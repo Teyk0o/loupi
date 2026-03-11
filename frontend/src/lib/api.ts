@@ -1,6 +1,7 @@
 /**
  * API client for communicating with the Loupi backend.
- * Handles authentication tokens, automatic refresh, and error formatting.
+ * Uses httpOnly cookies for authentication (no localStorage).
+ * Handles automatic token refresh and CSRF protection.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -11,10 +12,8 @@ export interface ApiError {
   message: string;
 }
 
-/** Token pair returned by auth endpoints. */
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
+/** Response from login/register (no tokens — they're in cookies). */
+export interface CookieAuthResponse {
   expires_in: number;
   user: UserResponse;
 }
@@ -28,101 +27,119 @@ export interface UserResponse {
   created_at: string;
 }
 
-/** Stored auth state. */
-interface AuthState {
-  accessToken: string;
-  refreshToken: string;
-  user: UserResponse;
+/** UUID v4 validation. */
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidUUID(s: string): boolean {
+  return UUID_REGEX.test(s);
 }
 
-const AUTH_KEY = "loupi_auth";
+/** Read a cookie value by name (client-side). */
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
-/** Retrieve stored auth state from localStorage. */
-export function getAuth(): AuthState | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(AUTH_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+/** Get CSRF token from cookie. */
+function getCSRFToken(): string | null {
+  return getCookie("loupi_csrf");
+}
+
+/** Map API errors to French user-friendly messages. */
+export function mapApiError(err: ApiError): string {
+  switch (err.error) {
+    case "validation_error":
+      return "Données invalides. Veuillez vérifier votre saisie.";
+    case "invalid_credentials":
+      return "Email ou mot de passe incorrect.";
+    case "conflict":
+      return "Un compte avec cet email existe déjà.";
+    case "rate_limit_exceeded":
+      return "Trop de tentatives. Veuillez réessayer plus tard.";
+    case "account_locked":
+      return "Compte temporairement verrouillé. Veuillez réessayer dans 15 minutes.";
+    case "csrf_error":
+      return "Session expirée. Veuillez recharger la page.";
+    case "not_found":
+      return "Ressource introuvable.";
+    case "unauthorized":
+      return "Vous devez vous connecter.";
+    case "payload_too_large":
+      return "La requête est trop volumineuse.";
+    default:
+      return err.message || "Une erreur est survenue.";
   }
 }
 
-/** Persist auth state to localStorage. */
-export function setAuth(tokens: TokenResponse): void {
-  const state: AuthState = {
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
-    user: tokens.user,
-  };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(state));
-}
-
-/** Clear stored auth state. */
-export function clearAuth(): void {
-  localStorage.removeItem(AUTH_KEY);
-}
-
 /**
- * Attempt to refresh the access token using the stored refresh token.
+ * Attempt to refresh the access token using the refresh cookie.
  * Returns true if successful, false otherwise.
  */
 async function refreshAccessToken(): Promise<boolean> {
-  const auth = getAuth();
-  if (!auth) return false;
-
   try {
     const res = await fetch(`${API_BASE}/v1/auth/refresh`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: auth.refreshToken }),
     });
 
-    if (!res.ok) {
-      clearAuth();
-      return false;
-    }
-
-    const tokens: TokenResponse = await res.json();
-    setAuth(tokens);
-    return true;
+    return res.ok;
   } catch {
-    clearAuth();
     return false;
   }
 }
 
 /**
+ * Build headers for a request, including CSRF token for state-changing methods.
+ */
+function buildHeaders(
+  method: string,
+  extra?: Record<string, string>,
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...extra,
+  };
+
+  // Attach CSRF token on state-changing requests
+  if (method !== "GET" && method !== "HEAD") {
+    const csrf = getCSRFToken();
+    if (csrf) {
+      headers["X-CSRF-Token"] = csrf;
+    }
+  }
+
+  return headers;
+}
+
+/**
  * Make an authenticated request to the API.
- * Automatically attaches the access token and retries once on 401 (token refresh).
+ * Cookies are sent automatically. Retries once on 401 (token refresh).
  */
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const auth = getAuth();
+  const method = (options.method || "GET").toUpperCase();
+  const headers = buildHeaders(method, options.headers as Record<string, string>);
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (auth) {
-    headers["Authorization"] = `Bearer ${auth.accessToken}`;
-  }
-
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
 
   // Retry once with refreshed token on 401
-  if (res.status === 401 && auth) {
+  if (res.status === 401) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      const newAuth = getAuth();
-      if (newAuth) {
-        headers["Authorization"] = `Bearer ${newAuth.accessToken}`;
-        res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-      }
+      res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: buildHeaders(method, options.headers as Record<string, string>),
+        credentials: "include",
+      });
     }
   }
 
@@ -144,12 +161,13 @@ export async function apiPublicFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const method = (options.method || "GET").toUpperCase();
+  const headers = buildHeaders(method, options.headers as Record<string, string>);
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers as Record<string, string>),
-    },
+    headers,
+    credentials: "include",
   });
 
   if (!res.ok) {
