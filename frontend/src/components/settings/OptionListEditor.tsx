@@ -196,7 +196,6 @@ export function OptionListEditor({ title, category, showEmoji = false }: OptionL
                   <span className="w-8 text-center text-lg">{option.emoji}</span>
                 ) : null}
                 <span className="flex-1 text-sm text-foreground">{option.label}</span>
-                <span className="text-xs text-foreground-secondary">{option.value}</span>
                 <button
                   onClick={() => startEdit(option)}
                   className="rounded-[--radius-sm] p-2 text-foreground-secondary hover:text-foreground"

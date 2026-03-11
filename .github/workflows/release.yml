@@ -135,11 +135,11 @@ jobs:
           OTHER=""
 
           while IFS= read -r line; do
-            HASH=$(printf '%s' "$line" | cut -d' ' -f1)
-            MSG=$(printf '%s' "$line" | cut -d' ' -f2-)
+            HASH="${line%% *}"
+            MSG="${line#* }"
             SHORT_HASH="${HASH:0:7}"
 
-            ENTRY="$(printf '\n- %s (%s)' "$MSG" "$SHORT_HASH")"
+            ENTRY=$'\n'"- ${MSG} (${SHORT_HASH})"
             case "$MSG" in
               feat*)  FEAT="${FEAT}${ENTRY}" ;;
               fix*)   FIX="${FIX}${ENTRY}" ;;

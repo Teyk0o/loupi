@@ -45,13 +45,13 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={`
-                flex flex-col items-center gap-1.5 px-3 py-1.5
+                flex flex-col items-center gap-0.5 px-2 py-1.5
                 transition-colors duration-200
                 ${isActive ? "text-primary" : "text-foreground-secondary hover:text-foreground"}
               `}
             >
-              <Icon size={24} strokeWidth={isActive ? 2.2 : 1.8} />
-              <span className="font-heading text-xs font-medium">
+              <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
+              <span className="font-heading text-[10px] font-medium leading-tight">
                 {item.label}
               </span>
             </Link>

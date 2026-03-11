@@ -8,7 +8,6 @@
 
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { FloatingAddButton } from "@/components/layout/FloatingAddButton";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Logo } from "@/components/ui/Logo";
 
@@ -25,7 +24,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
-      <FloatingAddButton />
       <BottomNav />
     </AuthGuard>
   );
