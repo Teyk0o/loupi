@@ -153,29 +153,44 @@ jobs:
           # Build release body
           {
             if [ -n "$FEAT" ]; then
-              printf '## ✨ New Features\n%s\n\n' "$FEAT"
+              echo "## ✨ New Features"
+              echo "$FEAT"
+              echo ""
             fi
             if [ -n "$FIX" ]; then
-              printf '## 🐛 Bug Fixes\n%s\n\n' "$FIX"
+              echo "## 🐛 Bug Fixes"
+              echo "$FIX"
+              echo ""
             fi
             if [ -n "$DOCS" ]; then
-              printf '## 📚 Documentation\n%s\n\n' "$DOCS"
+              echo "## 📚 Documentation"
+              echo "$DOCS"
+              echo ""
             fi
             if [ -n "$CHORE" ]; then
-              printf '## 🔧 Maintenance\n%s\n\n' "$CHORE"
+              echo "## 🔧 Maintenance"
+              echo "$CHORE"
+              echo ""
             fi
             if [ -n "$OTHER" ]; then
-              printf '## 📦 Other\n%s\n\n' "$OTHER"
+              echo "## 📦 Other"
+              echo "$OTHER"
+              echo ""
             fi
 
-            printf '---\n\n'
-            printf '## 🐳 Docker\n\n'
-            printf '```bash\n'
-            printf 'docker pull ghcr.io/teyk0o/loupi:%s\n' "$TAG_NAME"
-            printf '```\n\n'
-            printf '**Supported architectures:** `linux/amd64`, `linux/arm64`\n\n'
-            printf 'See the [deployment guide](https://github.com/Teyk0o/loupi#getting-started) for setup instructions.\n\n'
-            printf '**Full changelog:** [`%s...%s`](https://github.com/Teyk0o/loupi/compare/%s...%s)' "$PREV_TAG" "$TAG_NAME" "$PREV_TAG" "$TAG_NAME"
+            echo "---"
+            echo ""
+            echo "## 🐳 Docker"
+            echo ""
+            echo '```bash'
+            echo "docker pull ghcr.io/teyk0o/loupi:${TAG_NAME}"
+            echo '```'
+            echo ""
+            echo "**Supported architectures:** \`linux/amd64\`, \`linux/arm64\`"
+            echo ""
+            echo "See the [deployment guide](https://github.com/Teyk0o/loupi#getting-started) for setup instructions."
+            echo ""
+            echo "**Full changelog:** [\`${PREV_TAG}...${TAG_NAME}\`](https://github.com/Teyk0o/loupi/compare/${PREV_TAG}...${TAG_NAME})"
           } > /tmp/release_body.md
 
           # Create GitHub Release

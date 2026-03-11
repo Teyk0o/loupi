@@ -8,10 +8,10 @@
 # Without LOUPI_API_DOMAIN, the API is only reachable via LOUPI_DOMAIN/v1/*.
 
 # ---------------------------------------------------------------------------
-# Global options — provide email for ACME account (enables ZeroSSL fallback)
+# Global options — use ZeroSSL as ACME CA (avoids Let's Encrypt rate limits)
 # ---------------------------------------------------------------------------
 {
-	email {$LOUPI_ACME_EMAIL:contact@loupi.app}
+	acme_ca https://acme.zerossl.com/v2/DV90
 }
 
 # ---------------------------------------------------------------------------
