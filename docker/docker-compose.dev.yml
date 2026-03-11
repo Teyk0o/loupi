@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       - POSTGRES_DB=${LOUPI_DB_NAME:-loupi}
       - POSTGRES_USER=${LOUPI_DB_USER:-loupi}
@@ -49,7 +49,8 @@ services:
       - LOUPI_REDIS_PASSWORD=${LOUPI_REDIS_PASSWORD:-redis_dev}
       - LOUPI_JWT_SECRET=${LOUPI_JWT_SECRET:-dev_jwt_secret_change_in_production}
       - LOUPI_ENCRYPTION_KEY=${LOUPI_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
-      - LOUPI_ALLOWED_ORIGINS=http://localhost:3000
+      - LOUPI_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LOUPI_COOKIE_DOMAIN=
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +65,8 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=
+      - API_PROXY_TARGET=http://api:8080
     volumes:
       - ../frontend/src:/app/src
       - ../frontend/public:/app/public

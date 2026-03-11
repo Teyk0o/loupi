@@ -27,9 +27,9 @@ export interface UserResponse {
   created_at: string;
 }
 
-/** UUID v4 validation. */
+/** UUID validation (accepts any version). */
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function isValidUUID(s: string): boolean {
   return UUID_REGEX.test(s);
@@ -151,6 +151,7 @@ export async function apiFetch<T>(
     throw err;
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -178,5 +179,6 @@ export async function apiPublicFetch<T>(
     throw err;
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }

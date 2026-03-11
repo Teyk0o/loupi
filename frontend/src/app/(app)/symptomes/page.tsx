@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo, type FormEvent } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -26,22 +27,45 @@ interface SymptomEntry {
   created_at: string;
 }
 
-function todayString(): string {
-  return new Date().toISOString().split("T")[0];
+/** Format a Date to YYYY-MM-DD. */
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Format a date for display (e.g. "Lun. 10 mars 2026"). */
+function formatDisplayDate(date: Date): string {
+  return date.toLocaleDateString("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  });
 }
 
 function nowTimeString(): string {
   return new Date().toTimeString().slice(0, 5);
 }
 
+/** Get local timezone offset as +HH:MM or -HH:MM string. */
+function localTimezoneOffset(): string {
+  const offset = new Date().getTimezoneOffset();
+  const sign = offset <= 0 ? "+" : "-";
+  const absOffset = Math.abs(offset);
+  const hours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+  const minutes = String(absOffset % 60).padStart(2, "0");
+  return `${sign}${hours}:${minutes}`;
+}
+
 /** Severity display with colored dots. */
 function SeverityDots({ severity }: { severity: number }) {
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
-          className={`h-2 w-2 rounded-full ${
+          className={`h-2.5 w-2.5 rounded-full ${
             n <= severity ? "bg-danger" : "bg-border"
           }`}
         />
@@ -51,10 +75,11 @@ function SeverityDots({ severity }: { severity: number }) {
 }
 
 export default function SymptomsPage() {
+  const searchParams = useSearchParams();
   const { options: symptomTypes } = useCustomOptions("symptom_type");
   const [entries, setEntries] = useState<SymptomEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(todayString);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   /** Build label lookup from user's custom options. */
   const symptomLabels = useMemo(() => {
@@ -71,11 +96,18 @@ export default function SymptomsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchEntries = useCallback(async (date: string) => {
+  // Open form if redirected from /ajouter with ?add=true
+  useEffect(() => {
+    if (searchParams.get("add") === "true") {
+      setShowForm(true);
+    }
+  }, [searchParams]);
+
+  const fetchEntries = useCallback(async (date: Date) => {
     setIsLoading(true);
     try {
       const data = await apiFetch<SymptomEntry[]>(
-        `/v1/symptoms?date=${date}`,
+        `/v1/symptoms?date=${toDateString(date)}`,
       );
       setEntries(data || []);
     } catch {
@@ -111,7 +143,7 @@ export default function SymptomsPage() {
     setError("");
 
     try {
-      const entryTime = `${selectedDate}T${time}:00Z`;
+      const entryTime = `${toDateString(selectedDate)}T${time}:00${localTimezoneOffset()}`;
       await apiFetch("/v1/symptoms", {
         method: "POST",
         body: JSON.stringify({
@@ -145,29 +177,64 @@ export default function SymptomsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      {/* Header + Date selector (same layout as journal) */}
+      <div className="mb-6 md:flex md:items-center md:justify-between">
+        <div className="mb-4 md:mb-0">
           <h1 className="font-heading text-xl font-semibold">Symptômes</h1>
           <p className="text-sm text-foreground-secondary">
             Signalez des symptômes indépendants d&apos;un repas
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white"
-        >
-          <Plus size={20} />
-        </button>
-      </div>
 
-      {/* Date filter */}
-      <div className="mb-4">
-        <Input
-          id="date-filter"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-        />
+        <div className="flex items-center gap-3">
+          {/* Date selector */}
+          <div className="mx-auto flex w-fit items-center gap-2 rounded-[--radius-md] border border-border bg-surface px-2 py-1 md:mx-0 md:px-3">
+            <button
+              onClick={() =>
+                setSelectedDate((prev) => {
+                  const d = new Date(prev);
+                  d.setDate(d.getDate() - 1);
+                  return d;
+                })
+              }
+              className="rounded-[--radius-sm] p-1.5 text-foreground-secondary hover:text-foreground"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => setSelectedDate(new Date())}
+              className={`min-w-[140px] text-center font-heading text-sm font-medium ${
+                toDateString(selectedDate) === toDateString(new Date())
+                  ? "text-primary"
+                  : "text-foreground"
+              }`}
+            >
+              {toDateString(selectedDate) === toDateString(new Date())
+                ? "Aujourd'hui"
+                : formatDisplayDate(selectedDate)}
+            </button>
+            <button
+              onClick={() =>
+                setSelectedDate((prev) => {
+                  const d = new Date(prev);
+                  d.setDate(d.getDate() + 1);
+                  return d;
+                })
+              }
+              className="rounded-[--radius-sm] p-1.5 text-foreground-secondary hover:text-foreground"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          {/* Add button */}
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -182,10 +249,10 @@ export default function SymptomsPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Symptom type toggles */}
             <div>
-              <p className="mb-2 font-heading text-xs font-medium text-foreground-secondary">
+              <p className="mb-2 font-heading text-sm font-medium text-foreground-secondary">
                 Symptômes ressentis
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {symptomTypes.map((st) => {
                   const isSelected = symptoms.some((s) => s.type === st.value);
                   return (
@@ -194,7 +261,7 @@ export default function SymptomsPage() {
                       type="button"
                       onClick={() => toggleSymptom(st.value)}
                       className={`
-                        rounded-[--radius-full] border px-3 py-1 text-xs transition-all
+                        rounded-[--radius-full] border px-3.5 py-1.5 text-sm transition-all
                         ${
                           isSelected
                             ? "border-primary bg-primary-light text-foreground"
@@ -214,17 +281,17 @@ export default function SymptomsPage() {
               <div className="flex flex-col gap-3">
                 {symptoms.map((symptom) => (
                   <div key={symptom.type} className="flex items-center justify-between">
-                    <span className="text-xs text-foreground">
+                    <span className="text-sm text-foreground">
                       {symptomLabels[symptom.type]}
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
                           key={n}
                           type="button"
                           onClick={() => updateSeverity(symptom.type, n)}
                           className={`
-                            h-7 w-7 rounded-[--radius-sm] text-xs font-medium transition-all
+                            h-9 w-9 rounded-[--radius-sm] text-sm font-medium transition-all
                             ${
                               symptom.severity === n
                                 ? "bg-danger text-white"
@@ -293,9 +360,18 @@ export default function SymptomsPage() {
           <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : entries.length === 0 ? (
-        <p className="py-8 text-center text-sm text-foreground-secondary">
-          Aucun symptôme enregistré pour cette date
-        </p>
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <p className="text-foreground-secondary">
+            Aucun symptôme enregistré pour cette date
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-1.5 font-heading text-sm font-medium text-primary hover:underline"
+          >
+            <Plus size={16} />
+            Ajouter un symptôme
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:grid-cols-3">
           {entries.map((entry) => (
@@ -308,22 +384,22 @@ export default function SymptomsPage() {
                 </span>
                 <button
                   onClick={() => handleDelete(entry.id)}
-                  className="text-foreground-secondary hover:text-danger"
+                  className="p-1.5 text-foreground-secondary hover:text-danger"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </div>
-              <p className="mb-2 text-xs text-foreground-secondary">
+              <p className="mb-2 text-sm text-foreground-secondary">
                 {new Date(entry.entry_time).toLocaleTimeString("fr-FR", {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
               </p>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 {(Array.isArray(entry.symptoms) ? entry.symptoms : []).map(
                   (s, i) => (
                     <div key={i} className="flex items-center justify-between">
-                      <span className="text-xs text-foreground">
+                      <span className="text-sm text-foreground">
                         {symptomLabels[s.type] || s.type}
                       </span>
                       <SeverityDots severity={s.severity} />
@@ -332,7 +408,7 @@ export default function SymptomsPage() {
                 )}
               </div>
               {entry.notes ? (
-                <p className="mt-2 text-xs text-foreground-secondary">
+                <p className="mt-2 text-sm text-foreground-secondary">
                   {entry.notes}
                 </p>
               ) : null}

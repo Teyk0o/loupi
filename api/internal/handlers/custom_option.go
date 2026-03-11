@@ -142,7 +142,7 @@ func (h *CustomOptionHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.Status(http.StatusNoContent)
 }
 
 // Reorder handles reordering of custom options (PUT /v1/options/:category/reorder).
